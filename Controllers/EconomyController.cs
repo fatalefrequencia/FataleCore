@@ -39,15 +39,19 @@ namespace FataleCore.Controllers
 
             if (user == null) return NotFound("User not found");
 
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                .FirstOrDefaultAsync(t => t.Id == trackId);
+
+            if (track == null) return NotFound("Track not found");
+
             // Check if already purchased
             var alreadyPurchased = await _context.TrackPurchases
                 .AnyAsync(tp => tp.UserId == user.Id && tp.TrackId == trackId);
             
             if (alreadyPurchased) return BadRequest(new { message = "Track already purchased" });
 
-            // Assuming a fixed cost or fetching from track if it had a price
-            // For now, let's say a track costs 10 credits by default
-            int cost = 10; 
+            int cost = track.Price; 
 
             if (user.CreditsBalance < cost)
             {
@@ -60,16 +64,76 @@ namespace FataleCore.Controllers
             // Record purchase
             var purchase = new TrackPurchase
             {
-                UserId = user.Id, // Use the resolved user.Id
+                UserId = user.Id,
                 TrackId = trackId,
                 Cost = cost,
                 PurchaseDate = DateTime.UtcNow
             };
 
             _context.TrackPurchases.Add(purchase);
+
+            // Credit the Artist (and associated User)
+            if (track.Album?.ArtistId != null)
+            {
+                var artist = await _context.Artists.FindAsync(track.Album.ArtistId);
+                if (artist != null)
+                {
+                    artist.CreditsBalance += cost;
+                    
+                    // IF Artist is linked to a User, credit the User too
+                    if (artist.UserId.HasValue)
+                    {
+                        var artistUser = await _context.Users.FindAsync(artist.UserId.Value);
+                        if (artistUser != null)
+                        {
+                            artistUser.CreditsBalance += cost;
+                        }
+                    }
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, newBalance = user.CreditsBalance, message = "Track purchased successfully" });
+        }
+
+        // POST: api/Economy/tip/{artistId}?amount=50
+        [HttpPost("tip/{artistId}")]
+        public async Task<IActionResult> TipArtist(int artistId, [FromQuery] int amount, [FromHeader(Name = "UserId")] int userId)
+        {
+            // Dev Mode Fallback
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) user = await _context.Users.FirstOrDefaultAsync();
+
+            if (user == null) return NotFound("User not found");
+
+            int tipAmount = amount > 0 ? amount : 50; // Default to 50 if not specified
+
+            if (user.CreditsBalance < tipAmount)
+                 return BadRequest(new { message = "Insufficient credits for tip" });
+
+            user.CreditsBalance -= tipAmount;
+            
+            // Credit the Artist
+            var artist = await _context.Artists.FindAsync(artistId);
+            if (artist != null)
+            {
+                artist.CreditsBalance += tipAmount;
+
+                // IF Artist is linked to a User, credit the User too
+                if (artist.UserId.HasValue)
+                {
+                    var artistUser = await _context.Users.FindAsync(artist.UserId.Value);
+                    if (artistUser != null)
+                    {
+                        artistUser.CreditsBalance += tipAmount;
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            
+            return Ok(new { success = true, newBalance = user.CreditsBalance, message = $"Tipped {tipAmount} credits!" });
         }
 
         // POST: api/Economy/add

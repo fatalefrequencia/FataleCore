@@ -15,9 +15,9 @@ namespace FataleCore.Controllers {
         // Clase simple para recibir los datos del Frontend
         public class RegisterDto
         {
-            public string Username { get; set; }
-            public string Email { get; set; }
-            public string Password { get; set; }
+            public string Username { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
         }
 
         [HttpPost("register")]
@@ -37,7 +37,26 @@ namespace FataleCore.Controllers {
                 _context.Users.Add(newUser);
                 _context.SaveChanges();
 
-                return Ok(new { message = "User created!", token = "fake-jwt-token-for-dev" });
+                // 3. Create automatic Artist Profile (Hidden by default)
+                var artist = new Artist
+                {
+                    Name = newUser.Username,
+                    Bio = "New Artist Profile", // Hidden from map
+                    ImageUrl = "", // No default image
+                    UserId = newUser.Id // Link to user
+                };
+                _context.Artists.Add(artist);
+                _context.SaveChanges();
+
+                return Ok(new 
+                { 
+                    message = "User created!", 
+                    token = "fake-jwt-token-for-dev",
+                    userId = newUser.Id,
+                    username = newUser.Username,
+                    email = newUser.Email,
+                    createdAt = newUser.CreatedAt
+                });
             }
             catch (Exception ex)
             {

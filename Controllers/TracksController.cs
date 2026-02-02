@@ -50,25 +50,50 @@ namespace FataleCore.Controllers
                     await dto.CoverImage.CopyToAsync(stream);
                 }
 
-                // 5. Create Track Entity
-                // NOTE: For now, we associate with a default "Singles" album if no AlbumId is provided.
-                // Or simplified: We just allow 0 if DB constraints permit, or create a placeholder.
-                // Assuming we need a valid AlbumId, we'll try to find a generic "Singles" album or create it.
-                // For simplicity of this specific user request, we will check if ANY album exists, if not create one.
+                // 5. Link to User's Artist Profile
+                var userIdStr = Request.Headers["UserId"].ToString();
+                int.TryParse(userIdStr, out var userId);
                 
-                var defaultAlbum = await _context.Albums.FirstOrDefaultAsync(a => a.Title == "Singles");
+                // If not found in header, maybe check context if Auth was full
+                var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId && userId != 0);
+                
+                if (artist == null && userId != 0)
+                {
+                    // Create new artist profile for this user
+                    var user = await _context.Users.FindAsync(userId);
+                    artist = new Artist 
+                    { 
+                        Name = user?.Username ?? $"User_{userId}", 
+                        Bio = user?.Biography ?? "", 
+                        ImageUrl = $"/uploads/{coverFileName}",
+                        UserId = userId
+                    };
+                    _context.Artists.Add(artist);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Require artist to exist (user must be logged in)
+                if (artist == null)
+                {
+                     // Auto-create for upload as well, keeping it hidden
+                     var user = await _context.Users.FindAsync(userId);
+                     artist = new Artist 
+                     { 
+                         Name = user?.Username ?? $"User_{userId}", 
+                         Bio = "New Artist Profile", // Hidden from map
+                         ImageUrl = $"/uploads/{coverFileName}",
+                         UserId = userId
+                     };
+                     _context.Artists.Add(artist);
+                     await _context.SaveChangesAsync();
+                }
+
+                // Fallback to "Singles" album for the specific artist
+                var defaultAlbum = await _context.Albums.FirstOrDefaultAsync(a => a.ArtistId == artist.Id && a.Title == "Singles");
+                
                 if (defaultAlbum == null)
                 {
-                    // Ensure there's an artist too
-                    var defaultArtist = await _context.Artists.FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
-                    if (defaultArtist == null)
-                    {
-                        defaultArtist = new Artist { Name = "Unknown Artist", Bio = "Auto-generated", ImageUrl = $"/uploads/{coverFileName}" };
-                        _context.Artists.Add(defaultArtist);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    defaultAlbum = new Album { Title = "Singles", ArtistId = defaultArtist.Id, ReleaseDate = DateTime.Now, CoverImageUrl = $"/uploads/{coverFileName}" };
+                    defaultAlbum = new Album { Title = "Singles", ArtistId = artist.Id, ReleaseDate = DateTime.Now, CoverImageUrl = $"/uploads/{coverFileName}" };
                     _context.Albums.Add(defaultAlbum);
                     await _context.SaveChangesAsync();
                 }
@@ -80,7 +105,12 @@ namespace FataleCore.Controllers
                     FilePath = $"/uploads/{audioFileName}",
                     CoverImageUrl = $"/uploads/{coverFileName}",
                     Duration = "0:00", // Would need a library to calculate duration
-                    AlbumId = defaultAlbum.Id
+                    AlbumId = defaultAlbum.Id,
+                    
+                    // Economy & Access Control
+                    Price = dto.Price,
+                    IsLocked = dto.IsLocked,
+                    IsDownloadable = true // default to true if uploaded
                 };
 
                 _context.Tracks.Add(track);
@@ -97,7 +127,11 @@ namespace FataleCore.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Track>>> GetTracks()
         {
-            return await _context.Tracks.Include(t => t.Album).ThenInclude(a => a.Artist).ToListAsync();
+            return await _context.Tracks
+                .Where(t => !t.IsDelisted)
+                .Include(t => t.Album)
+                    .ThenInclude(a => a!.Artist)
+                .ToListAsync();
         }
 
         [HttpGet("{id}")]
@@ -139,6 +173,45 @@ namespace FataleCore.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetTrack", new { id = track.Id }, track);
+        }
+
+        // DELETE: api/Tracks/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrack(int id, [FromHeader(Name = "UserId")] int requestUserId)
+        {
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                    .ThenInclude(a => a!.Artist)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (track == null) return NotFound("Track not found");
+
+            // 1. Verify Ownership
+            // Find the artist linked to this track to check their UserId
+            int? trackOwnerId = track.Album?.Artist?.UserId;
+            
+            if (trackOwnerId == null || trackOwnerId != requestUserId)
+            {
+                return Unauthorized("You are not the owner of this track.");
+            }
+
+            // 2. Check for Purchases
+            var hasPurchases = await _context.TrackPurchases.AnyAsync(p => p.TrackId == id);
+
+            if (!hasPurchases)
+            {
+                // Permanent Delete (Safety Check: Only if NO ONE has bought it)
+                _context.Tracks.Remove(track);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Track permanently removed (no existing purchases)." });
+            }
+            else
+            {
+                // Soft Delete / Delist (Safety Check: Hide from store but keep for owners)
+                track.IsDelisted = true;
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Track delisted from store. Existing purchasers still have access." });
+            }
         }
     }
 }

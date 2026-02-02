@@ -316,3 +316,4 @@ C:\Users\Customer\Downloads\Fatale version 1\FataleCore\obj\Debug\net10.0\refint
 C:\Users\Customer\Downloads\Fatale version 1\FataleCore\obj\Debug\net10.0\FataleCore.pdb
 C:\Users\Customer\Downloads\Fatale version 1\FataleCore\obj\Debug\net10.0\FataleCore.genruntimeconfig.cache
 C:\Users\Customer\Downloads\Fatale version 1\FataleCore\obj\Debug\net10.0\ref\FataleCore.dll
+C:\Users\Customer\Downloads\Fatale version 1\FataleCore\obj\Debug\net10.0\FataleCore.sourcelink.json

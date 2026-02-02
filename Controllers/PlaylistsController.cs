@@ -1,0 +1,175 @@
+using FataleCore.Data;
+using FataleCore.Dtos;
+using FataleCore.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace FataleCore.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PlaylistsController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public PlaylistsController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: api/Playlists/user/{userId}
+        [HttpGet("user/{userId}")]
+        public async Task<ActionResult<IEnumerable<Playlist>>> GetUserPlaylists(int userId)
+        {
+            var playlists = await _context.Playlists
+                .Where(p => p.UserId == userId)
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
+
+            return Ok(playlists);
+        }
+
+        // GET: api/Playlists/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<object>> GetPlaylist(int id)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+
+            var tracks = await _context.PlaylistTracks
+                .Where(pt => pt.PlaylistId == id)
+                .Include(pt => pt.Track)
+                .Select(pt => pt.Track)
+                .ToListAsync();
+
+            // Enrich tracks with artist info if needed (simplified here)
+            // Ideally we should include Artist/User relations
+
+            return Ok(new
+            {
+                Playlist = playlist,
+                Tracks = tracks
+            });
+        }
+
+        // POST: api/Playlists
+        [HttpPost]
+        public async Task<ActionResult<Playlist>> CreatePlaylist([FromBody] CreatePlaylistDto dto, [FromHeader(Name = "UserId")] int userId)
+        {
+            if (userId <= 0) return Unauthorized("Invalid User ID");
+
+            var playlist = new Playlist
+            {
+                UserId = userId,
+                Name = dto.Name,
+                Description = dto.Description,
+                IsPublic = dto.IsPublic,
+                TrackCount = 0
+            };
+
+            _context.Playlists.Add(playlist);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetPlaylist), new { id = playlist.Id }, playlist);
+        }
+
+        // PUT: api/Playlists/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePlaylist(int id, [FromBody] UpdatePlaylistDto dto, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            playlist.Name = dto.Name;
+            playlist.Description = dto.Description;
+            playlist.IsPublic = dto.IsPublic;
+
+            await _context.SaveChangesAsync();
+            return Ok(playlist);
+        }
+
+        // POST: api/Playlists/{id}/tracks
+        [HttpPost("{id}/tracks")]
+        public async Task<IActionResult> AddTrackToPlaylist(int id, [FromBody] AddTrackDto dto, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound("Playlist not found");
+
+            if (playlist.UserId != userId) return Forbid();
+
+            // Check if track exists
+            var track = await _context.Tracks.FindAsync(dto.TrackId);
+            if (track == null) return NotFound("Track not found");
+
+            // Check if already in playlist
+            var existing = await _context.PlaylistTracks
+                .FirstOrDefaultAsync(pt => pt.PlaylistId == id && pt.TrackId == dto.TrackId);
+            
+            if (existing != null) return Conflict("Track already in playlist");
+
+            var playlistTrack = new PlaylistTrack
+            {
+                PlaylistId = id,
+                TrackId = dto.TrackId
+            };
+
+            _context.PlaylistTracks.Add(playlistTrack);
+            
+            // Update count
+            playlist.TrackCount++;
+            
+            // If playlist image is empty, use this track's cover
+            if (string.IsNullOrEmpty(playlist.ImageUrl) && !string.IsNullOrEmpty(track.CoverImageUrl))
+            {
+                playlist.ImageUrl = track.CoverImageUrl;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Track added" });
+        }
+
+        // DELETE: api/Playlists/{id}/tracks/{trackId}
+        [HttpDelete("{id}/tracks/{trackId}")]
+        public async Task<IActionResult> RemoveTrackFromPlaylist(int id, int trackId, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            var item = await _context.PlaylistTracks
+                .FirstOrDefaultAsync(pt => pt.PlaylistId == id && pt.TrackId == trackId);
+            
+            if (item == null) return NotFound("Track not in playlist");
+
+            _context.PlaylistTracks.Remove(item);
+            playlist.TrackCount = Math.Max(0, playlist.TrackCount - 1);
+            
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Track removed" });
+        }
+
+        // DELETE: api/Playlists/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePlaylist(int id, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            // Remove tracks first
+            var tracks = await _context.PlaylistTracks.Where(pt => pt.PlaylistId == id).ToListAsync();
+            _context.PlaylistTracks.RemoveRange(tracks);
+
+            _context.Playlists.Remove(playlist);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+    }
+}
