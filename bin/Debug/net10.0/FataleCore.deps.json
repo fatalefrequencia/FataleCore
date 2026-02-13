@@ -12,10 +12,19 @@
           "Microsoft.AspNetCore.OpenApi": "10.0.0",
           "Microsoft.EntityFrameworkCore.Design": "10.0.2",
           "Microsoft.EntityFrameworkCore.Sqlite": "10.0.2",
-          "Swashbuckle.AspNetCore": "10.1.0"
+          "Swashbuckle.AspNetCore": "10.1.0",
+          "YoutubeExplode": "6.5.7"
         },
         "runtime": {
           "FataleCore.dll": {}
+        }
+      },
+      "AngleSharp/1.4.0": {
+        "runtime": {
+          "lib/net10.0/AngleSharp.dll": {
+            "assemblyVersion": "1.4.0.0",
+            "fileVersion": "1.4.0.0"
+          }
         }
       },
       "Humanizer.Core/2.14.1": {
@@ -783,6 +792,17 @@
             "fileVersion": "8.0.1.50722"
           }
         }
+      },
+      "YoutubeExplode/6.5.7": {
+        "dependencies": {
+          "AngleSharp": "1.4.0"
+        },
+        "runtime": {
+          "lib/net10.0/YoutubeExplode.dll": {
+            "assemblyVersion": "6.5.7.0",
+            "fileVersion": "6.5.7.0"
+          }
+        }
       }
     }
   },
@@ -791,6 +811,13 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "AngleSharp/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-6ph8mpaQx0KL0COYRt0kI8MB9gSp1PtKijKMhJU//+aVFgKAJLKDesG/+26JSaVCOrHNgPf12wpfoyRcMYOeXg==",
+      "path": "anglesharp/1.4.0",
+      "hashPath": "anglesharp.1.4.0.nupkg.sha512"
     },
     "Humanizer.Core/2.14.1": {
       "type": "package",
@@ -1092,6 +1119,13 @@
       "sha512": "sha512-GJw3bYkWpOgvN3tJo5X4lYUeIFA2HD293FPUhKmp7qxS+g5ywAb34Dnd3cDAFLkcMohy5XTpoaZ4uAHuw0uSPQ==",
       "path": "system.identitymodel.tokens.jwt/8.0.1",
       "hashPath": "system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512"
+    },
+    "YoutubeExplode/6.5.7": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oIJpcxpgSUaPxg73iYj1a0hckbCbOHOrE1OzeCH9lNf6oRjJp2awOyPaWvf1qRm6kYFJ88FktdMeT+lGyNUcvA==",
+      "path": "youtubeexplode/6.5.7",
+      "hashPath": "youtubeexplode.6.5.7.nupkg.sha512"
     }
   }
 }

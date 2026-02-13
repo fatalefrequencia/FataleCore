@@ -2,6 +2,19 @@
   "version": 3,
   "targets": {
     "net10.0": {
+      "AngleSharp/1.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/AngleSharp.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/AngleSharp.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Humanizer.Core/2.14.1": {
         "type": "package",
         "compile": {
@@ -1034,10 +1047,49 @@
             "related": ".xml"
           }
         }
+      },
+      "YoutubeExplode/6.5.7": {
+        "type": "package",
+        "dependencies": {
+          "AngleSharp": "1.4.0"
+        },
+        "compile": {
+          "lib/net10.0/YoutubeExplode.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/YoutubeExplode.dll": {
+            "related": ".xml"
+          }
+        }
       }
     }
   },
   "libraries": {
+    "AngleSharp/1.4.0": {
+      "sha512": "6ph8mpaQx0KL0COYRt0kI8MB9gSp1PtKijKMhJU//+aVFgKAJLKDesG/+26JSaVCOrHNgPf12wpfoyRcMYOeXg==",
+      "type": "package",
+      "path": "anglesharp/1.4.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "anglesharp.1.4.0.nupkg.sha512",
+        "anglesharp.nuspec",
+        "lib/net10.0/AngleSharp.dll",
+        "lib/net10.0/AngleSharp.xml",
+        "lib/net462/AngleSharp.dll",
+        "lib/net462/AngleSharp.xml",
+        "lib/net472/AngleSharp.dll",
+        "lib/net472/AngleSharp.xml",
+        "lib/net8.0/AngleSharp.dll",
+        "lib/net8.0/AngleSharp.xml",
+        "lib/netstandard2.0/AngleSharp.dll",
+        "lib/netstandard2.0/AngleSharp.xml",
+        "logo.png"
+      ]
+    },
     "Humanizer.Core/2.14.1": {
       "sha512": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw==",
       "type": "package",
@@ -3182,6 +3234,26 @@
         "system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512",
         "system.identitymodel.tokens.jwt.nuspec"
       ]
+    },
+    "YoutubeExplode/6.5.7": {
+      "sha512": "oIJpcxpgSUaPxg73iYj1a0hckbCbOHOrE1OzeCH9lNf6oRjJp2awOyPaWvf1qRm6kYFJ88FktdMeT+lGyNUcvA==",
+      "type": "package",
+      "path": "youtubeexplode/6.5.7",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "favicon.png",
+        "lib/net10.0/YoutubeExplode.dll",
+        "lib/net10.0/YoutubeExplode.xml",
+        "lib/net6.0/YoutubeExplode.dll",
+        "lib/net6.0/YoutubeExplode.xml",
+        "lib/net7.0/YoutubeExplode.dll",
+        "lib/net7.0/YoutubeExplode.xml",
+        "lib/netstandard2.0/YoutubeExplode.dll",
+        "lib/netstandard2.0/YoutubeExplode.xml",
+        "youtubeexplode.6.5.7.nupkg.sha512",
+        "youtubeexplode.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
@@ -3190,23 +3262,24 @@
       "Microsoft.AspNetCore.OpenApi >= 10.0.0",
       "Microsoft.EntityFrameworkCore.Design >= 10.0.2",
       "Microsoft.EntityFrameworkCore.Sqlite >= 10.0.2",
-      "Swashbuckle.AspNetCore >= 10.1.0"
+      "Swashbuckle.AspNetCore >= 10.1.0",
+      "YoutubeExplode >= 6.5.7"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Customer\\.nuget\\packages\\": {}
+    "C:\\Users\\Windows\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj",
+      "projectUniqueName": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj",
       "projectName": "FataleCore",
-      "projectPath": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj",
-      "packagesPath": "C:\\Users\\Customer\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\obj\\",
+      "projectPath": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj",
+      "packagesPath": "C:\\Users\\Windows\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Customer\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Windows\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3257,6 +3330,10 @@
           "Swashbuckle.AspNetCore": {
             "target": "Package",
             "version": "[10.1.0, )"
+          },
+          "YoutubeExplode": {
+            "target": "Package",
+            "version": "[6.5.7, )"
           }
         },
         "imports": [
@@ -3278,7 +3355,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

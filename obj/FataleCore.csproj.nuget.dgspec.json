@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj": {}
+    "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj": {
+    "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj",
+        "projectUniqueName": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj",
         "projectName": "FataleCore",
-        "projectPath": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\FataleCore.csproj",
-        "packagesPath": "C:\\Users\\Customer\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Customer\\Downloads\\Fatale version 1\\FataleCore\\obj\\",
+        "projectPath": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\FataleCore.csproj",
+        "packagesPath": "C:\\Users\\Windows\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Windows\\Documents\\FATALE V2 GIT\\FataleCore\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Customer\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Windows\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -65,6 +65,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[10.1.0, )"
+            },
+            "YoutubeExplode": {
+              "target": "Package",
+              "version": "[6.5.7, )"
             }
           },
           "imports": [
@@ -86,7 +90,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
