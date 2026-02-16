@@ -204,7 +204,7 @@ namespace FataleCore.Controllers
                 {
                     Console.WriteLine($"[YOUTUBE_FALLBACK] Primary video {videoId} failed: {ex.Message}. Searching fallback...");
                     
-                    var fallbackQuery = $"{video.Title} {video.Author.ChannelTitle} lyrics";
+                    var fallbackQuery = $"{video.Title} {video.Author.ChannelTitle} lyrics"; // Prefer explicit lyric videos
                     // Get top 3 to have better chance, but just taking first for now
                     var fallbackResults = await _youtubeClient.Search.GetVideosAsync(fallbackQuery).CollectAsync(3);
                     var fallbackVideo = fallbackResults.FirstOrDefault(v => v.Id.Value != videoId) ?? fallbackResults.FirstOrDefault();
@@ -235,21 +235,33 @@ namespace FataleCore.Controllers
                     return StatusCode(500, "Unable to retrieve stream manifest.");
                 }
 
-                // 3. Select Stream (Prefer M4A/AAC)
+                // 3. Select Stream (Strictly Prefer M4A/AAC for browser compatibility)
                 var audioStreams = streamManifest.GetAudioOnlyStreams();
-                var streamInfo = audioStreams.Where(s => s.Container == Container.Mp4).GetWithHighestBitrate() 
-                                 ?? audioStreams.GetWithHighestBitrate();
+                
+                // Try to get the highest bitrate MP4 (AAC) audio first
+                var streamInfo = audioStreams
+                    .Where(s => s.Container == Container.Mp4)
+                    .GetWithHighestBitrate();
+
+                // If no MP4 audio, try WebM (Opus) but warn/log, as Safari/iOS might struggle without transcoding
+                if (streamInfo == null)
+                {
+                    Console.WriteLine("[YOUTUBE_STREAM] No M4A/AAC stream found. Falling back to WebM/Opus.");
+                    streamInfo = audioStreams.GetWithHighestBitrate();
+                }
 
                 if (streamInfo == null)
                 {
-                    return NotFound("Audio stream not available.");
+                    return NotFound("Audio stream not available in any supported format.");
                 }
+
+                Console.WriteLine($"[YOUTUBE_STREAM] Serving stream: {streamInfo.Container} @ {streamInfo.Bitrate}");
 
                 // 4. Deduct Credits (Only on success)
                 user.CreditsBalance -= 1;
                 await _context.SaveChangesAsync();
 
-                return Ok(new { AudioUrl = streamInfo.Url, FallbackUsed = targetVideoId != videoId });
+                return Ok(new { AudioUrl = streamInfo.Url, FallbackUsed = targetVideoId != videoId, Format = streamInfo.Container.Name });
             }
             catch (Exception ex)
             {

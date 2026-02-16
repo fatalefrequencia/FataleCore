@@ -6,34 +6,47 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FataleCore.Migrations
 {
     /// <inheritdoc />
-    public partial class PlaylistSchemaUpdate : Migration
+    public partial class ConsolidatedSchemaUpdate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // migrationBuilder.AddColumn<bool>(
-            //     name: "IsDelisted",
-            //     table: "Tracks",
-            //     type: "INTEGER",
-            //     nullable: false,
-            //     defaultValue: false);
+            migrationBuilder.AddColumn<bool>(
+                name: "IsDelisted",
+                table: "Tracks",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: false);
 
-            // migrationBuilder.CreateTable(
-            //     name: "Messages",
-            //     columns: table => new
-            //     {
-            //         Id = table.Column<int>(type: "INTEGER", nullable: false)
-            //             .Annotation("Sqlite:Autoincrement", true),
-            //         SenderId = table.Column<int>(type: "INTEGER", nullable: false),
-            //         ReceiverId = table.Column<int>(type: "INTEGER", nullable: false),
-            //         Content = table.Column<string>(type: "TEXT", nullable: false),
-            //         Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
-            //         IsRead = table.Column<bool>(type: "INTEGER", nullable: false)
-            //     },
-            //     constraints: table =>
-            //     {
-            //         table.PrimaryKey("PK_Messages", x => x.Id);
-            //     });
+            migrationBuilder.AddColumn<int>(
+                name: "CreditsBalance",
+                table: "Artists",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<int>(
+                name: "UserId",
+                table: "Artists",
+                type: "INTEGER",
+                nullable: true);
+
+            migrationBuilder.CreateTable(
+                name: "Messages",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    SenderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ReceiverId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Content = table.Column<string>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    IsRead = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Messages", x => x.Id);
+                });
 
             migrationBuilder.CreateTable(
                 name: "PlaylistTracks",
@@ -62,10 +75,10 @@ namespace FataleCore.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            // migrationBuilder.CreateIndex(
-            //     name: "IX_Artists_UserId",
-            //     table: "Artists",
-            //     column: "UserId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Artists_UserId",
+                table: "Artists",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PlaylistTracks_PlaylistId",
@@ -77,12 +90,12 @@ namespace FataleCore.Migrations
                 table: "PlaylistTracks",
                 column: "TrackId");
 
-            // migrationBuilder.AddForeignKey(
-            //     name: "FK_Artists_Users_UserId",
-            //     table: "Artists",
-            //     column: "UserId",
-            //     principalTable: "Users",
-            //     principalColumn: "Id");
+            migrationBuilder.AddForeignKey(
+                name: "FK_Artists_Users_UserId",
+                table: "Artists",
+                column: "UserId",
+                principalTable: "Users",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
@@ -102,9 +115,17 @@ namespace FataleCore.Migrations
                 name: "IX_Artists_UserId",
                 table: "Artists");
 
-            // migrationBuilder.DropColumn(
-            //     name: "IsDelisted",
-            //     table: "Tracks");
+            migrationBuilder.DropColumn(
+                name: "IsDelisted",
+                table: "Tracks");
+
+            migrationBuilder.DropColumn(
+                name: "CreditsBalance",
+                table: "Artists");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "Artists");
         }
     }
 }

@@ -48,27 +48,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 
-    // TEMP: Add missing columns if they don't exist (since migrations are blocked)
-    try {
-        db.Database.ExecuteSqlRaw("ALTER TABLE Tracks ADD COLUMN IsDelisted INTEGER NOT NULL DEFAULT 0;");
-    } catch { /* Column likely already exists */ }
-
-    try {
-        db.Database.ExecuteSqlRaw("ALTER TABLE Artists ADD COLUMN CreditsBalance INTEGER NOT NULL DEFAULT 0;");
-    } catch { /* Column likely already exists */ }
-
-    // CREATE Messages table if not exists
-    try {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS Messages (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                SenderId INTEGER NOT NULL,
-                ReceiverId INTEGER NOT NULL,
-                Content TEXT NOT NULL,
-                Timestamp TEXT NOT NULL,
-                IsRead INTEGER NOT NULL DEFAULT 0
-            );");
-    } catch { /* Table likely already exists */ }
+    // TEMP: Add missing columns if they don't exist (since migrations are blocked) - REMOVED as migrations are fixed
 }
 
 // Configure the HTTP request pipeline.

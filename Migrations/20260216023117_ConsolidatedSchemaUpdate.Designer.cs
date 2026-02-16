@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FataleCore.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260202053051_PlaylistSchemaUpdate")]
-    partial class PlaylistSchemaUpdate
+    [Migration("20260216023117_ConsolidatedSchemaUpdate")]
+    partial class ConsolidatedSchemaUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
