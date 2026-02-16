@@ -18,5 +18,14 @@ namespace FataleCore.Data
         public DbSet<TrackPurchase> TrackPurchases { get; set; }
         public DbSet<UserArtistLike> UserArtistLikes { get; set; }
         public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<DiscoveryEvent> DiscoveryEvents { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Suppress the pending model changes warning to allow manual schema updates in Program.cs
+            optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
     }
 }

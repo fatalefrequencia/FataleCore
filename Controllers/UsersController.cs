@@ -25,6 +25,23 @@ namespace FataleCore.Controllers
             return await _context.Users.ToListAsync();
         }
 
+        // GET: api/Users/search?query=...
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<User>>> SearchUsers([FromQuery] string? query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) 
+            {
+                return await _context.Users.Take(10).ToListAsync();
+            }
+            
+            var results = await _context.Users
+                .Where(u => u.Username.ToLower().Contains(query.ToLower()))
+                .Take(20)
+                .ToListAsync();
+                
+            return Ok(results);
+        }
+
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile([FromHeader(Name = "UserId")] int userId)
         {
@@ -92,6 +109,40 @@ namespace FataleCore.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Profile updated successfully", user });
+        }
+
+        // GET: api/User/{id}/following
+        [HttpGet("{id}/following")]
+        public async Task<ActionResult<IEnumerable<User>>> GetFollowing(int id)
+        {
+            // Get all artists this user is following via UserArtistLikes
+            var following = await _context.UserArtistLikes
+                .Where(l => l.UserId == id)
+                .Include(l => l.Artist)
+                .Where(l => l.Artist != null && l.Artist.UserId != null)
+                .Select(l => l.Artist!.User!)
+                .ToListAsync();
+            
+            return Ok(following);
+        }
+
+        // GET: api/User/{id}/followers
+        [HttpGet("{id}/followers")]
+        public async Task<ActionResult<IEnumerable<User>>> GetFollowers(int id)
+        {
+            // Find this user's artist profile
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == id);
+            if (artist == null) return Ok(new List<User>());
+            
+            // Get all users who like this artist
+            var followers = await _context.UserArtistLikes
+                .Where(l => l.ArtistId == artist.Id)
+                .Include(l => l.User)
+                .Where(l => l.User != null)
+                .Select(l => l.User!)
+                .ToListAsync();
+            
+            return Ok(followers);
         }
     }
 }

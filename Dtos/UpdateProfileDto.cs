@@ -4,8 +4,8 @@ namespace FataleCore.Dtos
 {
     public class UpdateProfileDto
     {
-        public string Username { get; set; }
-        public string Biography { get; set; }
-        public IFormFile ProfilePicture { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Biography { get; set; } = string.Empty;
+        public IFormFile? ProfilePicture { get; set; }
     }
 }

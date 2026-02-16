@@ -12,5 +12,8 @@ namespace FataleCore.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string Biography { get; set; } = string.Empty;
         public string ProfilePictureUrl { get; set; } = string.Empty;
+
+        // Discovery Map Residency
+        public int? ResidentSectorId { get; set; }
     }
 }

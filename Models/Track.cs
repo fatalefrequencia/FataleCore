@@ -11,8 +11,21 @@ namespace FataleCore.Models
         public string FilePath { get; set; } = string.Empty;
         public string CoverImageUrl { get; set; } = string.Empty;
 
+        // Discovery Map Coordinates
+        public int? MapX { get; set; }
+        public int? MapY { get; set; }
+        public int? SectorId { get; set; }
+
+        // Economy & Access Control
+        public int Price { get; set; } = 0; // Cost in Credits
+        public bool IsDownloadable { get; set; } = true;
+        public bool IsLocked { get; set; } = false; // "Encrypted" / Preview Only
+        public bool IsDelisted { get; set; } = false; // Hidden from store but kept for previous purchasers
+
+        // Analytics
+        public int PlayCount { get; set; } = 0;
+
         public int AlbumId { get; set; }
-        [JsonIgnore]
         public Album? Album { get; set; }
     }
 }

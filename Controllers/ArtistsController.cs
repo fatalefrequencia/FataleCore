@@ -43,13 +43,41 @@ namespace FataleCore.Controllers
 
             return CreatedAtAction("GetArtist", new { id = artist.Id }, artist);
         }
-        [HttpPost("like/{artistId}")]
-        public async Task<IActionResult> LikeArtist(int artistId, [FromHeader(Name = "UserId")] int userId)
+        [HttpGet("user/{userId}")]
+        public async Task<ActionResult<Artist>> GetByUserId(int userId)
+        {
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artist == null) return NotFound();
+            return artist;
+        }
+
+        [HttpPost("like/{targetUserId}")]
+        public async Task<IActionResult> LikeArtist(int targetUserId, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
+            // Find the artist profile for the target user
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == targetUserId);
+            
+            if (artist == null)
+            {
+                // Auto-create a hidden artist profile for this user so they can be followed
+                 var targetUser = await _context.Users.FindAsync(targetUserId);
+                 if (targetUser == null) return NotFound("Target user not found");
+
+                 artist = new Artist 
+                 { 
+                     Name = targetUser.Username,
+                     Bio = "New Artist Profile", // This specific string is filtered from the map
+                     ImageUrl = targetUser.ProfilePictureUrl ?? "",
+                     UserId = targetUser.Id
+                 };
+                 _context.Artists.Add(artist);
+                 await _context.SaveChangesAsync();
+            }
+
             var existingLike = await _context.UserArtistLikes
-                .FirstOrDefaultAsync(l => l.UserId == userId && l.ArtistId == artistId);
+                .FirstOrDefaultAsync(l => l.UserId == userId && l.ArtistId == artist.Id);
 
             if (existingLike != null)
             {
@@ -62,7 +90,7 @@ namespace FataleCore.Controllers
             var like = new UserArtistLike
             {
                 UserId = userId,
-                ArtistId = artistId,
+                ArtistId = artist.Id,
                 LikedAt = DateTime.UtcNow
             };
 
@@ -72,13 +100,18 @@ namespace FataleCore.Controllers
             return Ok(new { liked = true });
         }
         
-        [HttpGet("like/check/{artistId}")]
-        public async Task<IActionResult> CheckArtistLike(int artistId, [FromHeader(Name = "UserId")] int userId)
+        
+        [HttpGet("like/check/{targetUserId}")]
+        public async Task<IActionResult> CheckArtistLike(int targetUserId, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Ok(new { liked = false });
 
+            // Find the artist profile for the target user
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == targetUserId);
+            if (artist == null) return Ok(new { liked = false });
+
             var isLiked = await _context.UserArtistLikes
-                .AnyAsync(l => l.UserId == userId && l.ArtistId == artistId);
+                .AnyAsync(l => l.UserId == userId && l.ArtistId == artist.Id);
 
             return Ok(new { liked = isLiked });
         }
