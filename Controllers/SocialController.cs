@@ -43,8 +43,8 @@ namespace FataleCore.Controllers
             return Ok(new { message = "Track liked", liked = true });
         }
 
-        // DELETE: api/social/like/{trackId}
-        [HttpDelete("like/{trackId}")]
+        // POST: api/social/unlike/{trackId}
+        [HttpPost("unlike/{trackId}")]
         public async Task<IActionResult> UnlikeTrack(int trackId, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");

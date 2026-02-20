@@ -21,6 +21,12 @@ namespace FataleCore.Data
         public DbSet<DiscoveryEvent> DiscoveryEvents { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
+        public DbSet<YoutubeTrack> YoutubeTracks { get; set; }
+        public DbSet<YoutubeCacheSubscription> YoutubeCacheSubscriptions { get; set; }
+        public DbSet<CachedYoutubeTrack> CachedYoutubeTracks { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<JournalEntry> JournalEntries { get; set; }
+        public DbSet<StudioContent> StudioContents { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

@@ -19,10 +19,12 @@ namespace FataleCore.Controllers
         }
 
         [HttpPost("upload-full")]
-        public async Task<IActionResult> UploadTrack([FromForm] FataleCore.Dtos.TrackUploadDto dto)
+        public async Task<IActionResult> UploadTrack([FromForm] FataleCore.Dtos.TrackUploadDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             try
             {
+                Console.WriteLine($"[TRACK_UPLOAD] Initialized for User: {userId}");
+
                 // 1. Basic Validation
                 if (dto.AudioFile == null || dto.AudioFile.Length == 0)
                     return BadRequest("Audio file is empty.");
@@ -51,20 +53,16 @@ namespace FataleCore.Controllers
                 }
 
                 // 5. Link to User's Artist Profile
-                var userIdStr = Request.Headers["UserId"].ToString();
-                int.TryParse(userIdStr, out var userId);
-                
-                // If not found in header, maybe check context if Auth was full
                 var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId && userId != 0);
                 
                 if (artist == null && userId != 0)
                 {
-                    // Create new artist profile for this user
+                    Console.WriteLine($"[TRACK_UPLOAD] Creating new artist profile for User: {userId}");
                     var user = await _context.Users.FindAsync(userId);
                     artist = new Artist 
                     { 
                         Name = user?.Username ?? $"User_{userId}", 
-                        Bio = user?.Biography ?? "", 
+                        Bio = user?.Biography ?? "New Artist Profile", 
                         ImageUrl = $"/uploads/{coverFileName}",
                         UserId = userId
                     };
@@ -72,20 +70,12 @@ namespace FataleCore.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                // Require artist to exist (user must be logged in)
                 if (artist == null)
                 {
-                     // Auto-create for upload as well, keeping it hidden
-                     var user = await _context.Users.FindAsync(userId);
-                     artist = new Artist 
-                     { 
-                         Name = user?.Username ?? $"User_{userId}", 
-                         Bio = "New Artist Profile", // Hidden from map
-                         ImageUrl = $"/uploads/{coverFileName}",
-                         UserId = userId
-                     };
-                     _context.Artists.Add(artist);
-                     await _context.SaveChangesAsync();
+                    Console.WriteLine($"[TRACK_UPLOAD] WARNING: No artist and no userId found. Saving with fallback artist.");
+                    // Last resort fallback
+                     artist = await _context.Artists.FirstOrDefaultAsync(a => a.Id == 1); // System artist fallback
+                     if (artist == null) return Unauthorized("User session invalid or no artist profile found.");
                 }
 
                 // Fallback to "Singles" album for the specific artist
@@ -101,25 +91,27 @@ namespace FataleCore.Controllers
                 var track = new Track
                 {
                     Title = dto.TrackTitle,
-                    Genre = dto.Genre,
+                    Genre = dto.Genre ?? "Unknown",
                     FilePath = $"/uploads/{audioFileName}",
                     CoverImageUrl = $"/uploads/{coverFileName}",
-                    Duration = "0:00", // Would need a library to calculate duration
+                    Duration = "0:00", 
                     AlbumId = defaultAlbum.Id,
                     
-                    // Economy & Access Control
                     Price = dto.Price,
                     IsLocked = dto.IsLocked,
-                    IsDownloadable = true // default to true if uploaded
+                    IsDownloadable = true
                 };
 
                 _context.Tracks.Add(track);
                 await _context.SaveChangesAsync();
 
+                Console.WriteLine($"[TRACK_UPLOAD] SUCCESS: Track {track.Id} saved and linked to Artist {artist.Id} (User {artist.UserId})");
+
                 return CreatedAtAction(nameof(GetTrack), new { id = track.Id }, track);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[TRACK_UPLOAD] ERROR: {ex.Message}");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
@@ -212,6 +204,51 @@ namespace FataleCore.Controllers
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Track delisted from store. Existing purchasers still have access." });
             }
+        }
+        [HttpPost("{id}/toggle-pin")]
+        public async Task<IActionResult> TogglePin(int id, [FromHeader(Name = "UserId")] int requestUserId)
+        {
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                    .ThenInclude(a => a!.Artist)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (track == null) return NotFound("Track not found");
+
+            // Verify Ownership
+            int? trackOwnerId = track.Album?.Artist?.UserId;
+            if (trackOwnerId == null || trackOwnerId != requestUserId)
+            {
+                return Unauthorized("You are not the owner of this track.");
+            }
+
+            track.IsPinned = !track.IsPinned;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { isPinned = track.IsPinned });
+        }
+
+        [HttpPost("{id}/toggle-post")]
+        public async Task<IActionResult> TogglePost(int id, [FromHeader(Name = "UserId")] int requestUserId)
+        {
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                    .ThenInclude(a => a!.Artist)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (track == null) return NotFound("Track not found");
+
+            // Verify Ownership
+            int? trackOwnerId = track.Album?.Artist?.UserId;
+            if (trackOwnerId == null || trackOwnerId != requestUserId)
+            {
+                return Unauthorized("You are not the owner of this track.");
+            }
+
+            track.IsPosted = !track.IsPosted;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { isPosted = track.IsPosted });
         }
     }
 }

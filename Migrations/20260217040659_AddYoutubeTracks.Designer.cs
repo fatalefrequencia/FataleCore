@@ -3,6 +3,7 @@ using System;
 using FataleCore.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FataleCore.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217040659_AddYoutubeTracks")]
+    partial class AddYoutubeTracks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -66,15 +69,9 @@ namespace FataleCore.Migrations
                     b.Property<int>("CreditsBalance")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("FeaturedTrackId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsLive")
-                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("MapX")
                         .HasColumnType("INTEGER");
@@ -94,55 +91,9 @@ namespace FataleCore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FeaturedTrackId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Artists");
-                });
-
-            modelBuilder.Entity("FataleCore.Models.CachedYoutubeTrack", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("AudioFilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("AudioQuality")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CachedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("FileSizeBytes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("YoutubeTrackId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("YoutubeTrackId");
-
-                    b.ToTable("CachedYoutubeTracks");
                 });
 
             modelBuilder.Entity("FataleCore.Models.DiscoveryEvent", b =>
@@ -177,39 +128,6 @@ namespace FataleCore.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("DiscoveryEvents");
-                });
-
-            modelBuilder.Entity("FataleCore.Models.JournalEntry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsPinned")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPosted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("JournalEntries");
                 });
 
             modelBuilder.Entity("FataleCore.Models.Message", b =>
@@ -375,9 +293,6 @@ namespace FataleCore.Migrations
                     b.Property<int?>("SectorId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Source")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -414,59 +329,14 @@ namespace FataleCore.Migrations
                     b.ToTable("TrackPurchases");
                 });
 
-            modelBuilder.Entity("FataleCore.Models.Transaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("RelatedUserId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("TrackId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RelatedUserId");
-
-                    b.HasIndex("TrackId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Transactions");
-                });
-
             modelBuilder.Entity("FataleCore.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("BackgroundColor")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("BannerUrl")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Biography")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -484,16 +354,11 @@ namespace FataleCore.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ProfilePictureUrl")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("ResidentSectorId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("TextColor")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ThemeColor")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -537,10 +402,13 @@ namespace FataleCore.Migrations
                     b.Property<DateTime>("LikedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TrackId")
+                    b.Property<int?>("TrackId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("YoutubeTrackId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -549,54 +417,9 @@ namespace FataleCore.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("YoutubeTrackId");
+
                     b.ToTable("UserLikes");
-                });
-
-            modelBuilder.Entity("FataleCore.Models.YoutubeCacheSubscription", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CacheLimit")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CurrentPeriodEnd")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("MonthlyPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StripeSubscriptionId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Tier")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("YoutubeCacheSubscriptions");
                 });
 
             modelBuilder.Entity("FataleCore.Models.YoutubeTrack", b =>
@@ -612,9 +435,8 @@ namespace FataleCore.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Duration")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Duration")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ThumbnailUrl")
                         .IsRequired()
@@ -649,36 +471,11 @@ namespace FataleCore.Migrations
 
             modelBuilder.Entity("FataleCore.Models.Artist", b =>
                 {
-                    b.HasOne("FataleCore.Models.Track", "FeaturedTrack")
-                        .WithMany()
-                        .HasForeignKey("FeaturedTrackId");
-
                     b.HasOne("FataleCore.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
 
-                    b.Navigation("FeaturedTrack");
-
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FataleCore.Models.CachedYoutubeTrack", b =>
-                {
-                    b.HasOne("FataleCore.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FataleCore.Models.YoutubeTrack", "YoutubeTrack")
-                        .WithMany()
-                        .HasForeignKey("YoutubeTrackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-
-                    b.Navigation("YoutubeTrack");
                 });
 
             modelBuilder.Entity("FataleCore.Models.DiscoveryEvent", b =>
@@ -694,17 +491,6 @@ namespace FataleCore.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("Track");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FataleCore.Models.JournalEntry", b =>
-                {
-                    b.HasOne("FataleCore.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -772,29 +558,6 @@ namespace FataleCore.Migrations
                     b.Navigation("Track");
                 });
 
-            modelBuilder.Entity("FataleCore.Models.Transaction", b =>
-                {
-                    b.HasOne("FataleCore.Models.User", "RelatedUser")
-                        .WithMany()
-                        .HasForeignKey("RelatedUserId");
-
-                    b.HasOne("FataleCore.Models.Track", "Track")
-                        .WithMany()
-                        .HasForeignKey("TrackId");
-
-                    b.HasOne("FataleCore.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RelatedUser");
-
-                    b.Navigation("Track");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("FataleCore.Models.UserArtistLike", b =>
                 {
                     b.HasOne("FataleCore.Models.Artist", "Artist")
@@ -818,30 +581,23 @@ namespace FataleCore.Migrations
                 {
                     b.HasOne("FataleCore.Models.Track", "Track")
                         .WithMany()
-                        .HasForeignKey("TrackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("TrackId");
 
                     b.HasOne("FataleCore.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("FataleCore.Models.YoutubeTrack", "YoutubeTrack")
+                        .WithMany()
+                        .HasForeignKey("YoutubeTrackId");
 
                     b.Navigation("Track");
 
                     b.Navigation("User");
-                });
 
-            modelBuilder.Entity("FataleCore.Models.YoutubeCacheSubscription", b =>
-                {
-                    b.HasOne("FataleCore.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                    b.Navigation("YoutubeTrack");
                 });
 #pragma warning restore 612, 618
         }

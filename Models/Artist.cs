@@ -11,11 +11,17 @@ namespace FataleCore.Models
         public int? MapX { get; set; }
         public int? MapY { get; set; }
         public int? SectorId { get; set; }
-
         public int CreditsBalance { get; set; } = 0;
         public int? UserId { get; set; }
         
+        // Neural Signal Metadata
+        public bool IsLive { get; set; } = false;
+        public int? FeaturedTrackId { get; set; }
+        
         [System.ComponentModel.DataAnnotations.Schema.ForeignKey("UserId")]
         public User? User { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("FeaturedTrackId")]
+        public Track? FeaturedTrack { get; set; }
     }
 }

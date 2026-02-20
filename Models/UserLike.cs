@@ -11,14 +11,14 @@ namespace FataleCore.Models
         [Required]
         public int UserId { get; set; }
 
+
+        // All tracks (local and YouTube) now live in the Tracks table
         [Required]
         public int TrackId { get; set; }
 
         public DateTime LikedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties if needed (optional but good for FK constraints)
-        // For simplicity and avoiding circular dependencies in simple setups, we might skip full nav props
-        // or just keep them basic. Let's add them for referential integrity.
+        // Navigation properties
         
         [ForeignKey("UserId")]
         public User? User { get; set; }

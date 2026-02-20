@@ -55,7 +55,14 @@ namespace FataleCore.Controllers {
                     userId = newUser.Id,
                     username = newUser.Username,
                     email = newUser.Email,
-                    createdAt = newUser.CreatedAt
+                    createdAt = newUser.CreatedAt,
+                    // Personalization Defaults
+                    themeColor = newUser.ThemeColor,
+                    textColor = newUser.TextColor,
+                    backgroundColor = newUser.BackgroundColor,
+                    isGlass = newUser.IsGlass,
+                    bannerUrl = newUser.BannerUrl,
+                    creditsBalance = newUser.CreditsBalance
                 });
             }
             catch (Exception ex)
@@ -89,7 +96,16 @@ namespace FataleCore.Controllers {
                     userId = user.Id,
                     username = user.Username,
                     email = user.Email,
-                    createdAt = user.CreatedAt
+                    createdAt = user.CreatedAt,
+                    // Personalization
+                    themeColor = user.ThemeColor,
+                    textColor = user.TextColor,
+                    backgroundColor = user.BackgroundColor,
+                    isGlass = user.IsGlass,
+                    bannerUrl = user.BannerUrl,
+                    profilePictureUrl = user.ProfilePictureUrl,
+                    biography = user.Biography,
+                    creditsBalance = user.CreditsBalance
                 });
             }
             catch (Exception ex)

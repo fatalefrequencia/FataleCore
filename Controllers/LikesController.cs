@@ -89,22 +89,50 @@ namespace FataleCore.Controllers
         }
 
         // GET: api/likes
-        // Get all liked tracks for the user
+        // Get all liked tracks for the user (Unified Library)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Track>>> GetLikedTracks([FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
+            // Fetch mixed tracks (local + youtube-indexed)
             var likedTracks = await _context.UserLikes
                 .Where(l => l.UserId == userId)
                 .Include(l => l.Track)
                 .ThenInclude(t => t!.Album)
                 .ThenInclude(a => a!.Artist)
-                .Where(l => l.Track != null)
-                .Select(l => l.Track!)
+                .Where(l => l.Track != null) // Ensure no orphaned likes
+                .Select(l => l.Track)
+                .Distinct() // Prevent UI duplication
                 .ToListAsync();
 
-            return likedTracks;
+            return Ok(likedTracks);
+        }
+
+        // POST: api/likes/cleanup
+        // Clears legacy "YoutubeExplode" style likes once and for all
+        [HttpPost("cleanup")]
+        public async Task<IActionResult> CleanupLegacyLikes([FromHeader(Name = "UserId")] int userId)
+        {
+            if (userId <= 0) return Unauthorized("Invalid User ID");
+
+            // Since we've updated the model, existing records with YoutubeTrackId
+            // might be in an inconsistent state in the DB if not migrated.
+            // We'll use Raw SQL to purge them to be extremely safe against model mismatches.
+            
+            try 
+            {
+                // Delete records where YoutubeTrackId was present (legacy schema)
+                // Note: If the column is already dropped by EF/Manual change, this might need adjustment.
+                // But for now, we'll assume it exists in the physical schema but not the C# model.
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM UserLikes WHERE YoutubeTrackId IS NOT NULL");
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Legacy signal interference cleared. Archive purged." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Cleanup failed: {ex.Message}");
+            }
         }
     }
 }

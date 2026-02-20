@@ -9,6 +9,7 @@ namespace FataleCore.Models
         public string Genre { get; set; } = string.Empty;
         public string Duration { get; set; } = string.Empty; // e.g., "3:45"
         public string FilePath { get; set; } = string.Empty;
+        public string? Source { get; set; } // e.g., "youtube:VIDEO_ID"
         public string CoverImageUrl { get; set; } = string.Empty;
 
         // Discovery Map Coordinates
@@ -21,6 +22,8 @@ namespace FataleCore.Models
         public bool IsDownloadable { get; set; } = true;
         public bool IsLocked { get; set; } = false; // "Encrypted" / Preview Only
         public bool IsDelisted { get; set; } = false; // Hidden from store but kept for previous purchasers
+        public bool IsPinned { get; set; } = false;
+        public bool IsPosted { get; set; } = false;
 
         // Analytics
         public int PlayCount { get; set; } = 0;

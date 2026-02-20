@@ -72,6 +72,17 @@ namespace FataleCore.Controllers
 
             _context.TrackPurchases.Add(purchase);
 
+            // 1. Transaction Log: Buyer (Spending)
+            _context.Transactions.Add(new Transaction
+            {
+                UserId = user.Id,
+                Type = "PURCHASE",
+                Amount = -cost,
+                Description = $"Purchased track: {track.Title}",
+                TrackId = trackId,
+                Timestamp = DateTime.UtcNow
+            });
+
             // Credit the Artist (and associated User)
             if (track.Album?.ArtistId != null)
             {
@@ -87,6 +98,18 @@ namespace FataleCore.Controllers
                         if (artistUser != null)
                         {
                             artistUser.CreditsBalance += cost;
+
+                            // 2. Transaction Log: Artist User (Earning)
+                            _context.Transactions.Add(new Transaction
+                            {
+                                UserId = artistUser.Id,
+                                Type = "EARNING_SALE",
+                                Amount = cost,
+                                Description = $"Sale of track: {track.Title}",
+                                TrackId = trackId,
+                                RelatedUserId = user.Id, // Buyer
+                                Timestamp = DateTime.UtcNow
+                            });
                         }
                     }
                 }
@@ -114,6 +137,17 @@ namespace FataleCore.Controllers
 
             user.CreditsBalance -= tipAmount;
             
+            // 1. Transaction Log: Sender (Tip Sent)
+            _context.Transactions.Add(new Transaction
+            {
+                UserId = user.Id,
+                Type = "TIP_SENT",
+                Amount = -tipAmount,
+                Description = $"Tip to artist ID {artistId}",
+                RelatedUserId = artistId, // Linking to artist ID for now (or resolution below)
+                Timestamp = DateTime.UtcNow
+            });
+            
             // Credit the Artist
             var artist = await _context.Artists.FindAsync(artistId);
             if (artist != null)
@@ -127,6 +161,17 @@ namespace FataleCore.Controllers
                     if (artistUser != null)
                     {
                         artistUser.CreditsBalance += tipAmount;
+
+                        // 2. Transaction Log: Artist User (Tip Received)
+                        _context.Transactions.Add(new Transaction
+                        {
+                            UserId = artistUser.Id,
+                            Type = "TIP_RECEIVED",
+                            Amount = tipAmount,
+                            Description = $"Tip from {user.Username}",
+                            RelatedUserId = user.Id,
+                            Timestamp = DateTime.UtcNow
+                        });
                     }
                 }
             }
@@ -154,6 +199,16 @@ namespace FataleCore.Controllers
             if (request.Amount <= 0) return BadRequest(new { message = "Amount must be positive" });
 
             user.CreditsBalance += request.Amount;
+            
+            _context.Transactions.Add(new Transaction
+            {
+                UserId = user.Id,
+                Type = "DEPOSIT",
+                Amount = request.Amount,
+                Description = "Manual credit adjustment",
+                Timestamp = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, newBalance = user.CreditsBalance, message = $"Added {request.Amount} credits" });

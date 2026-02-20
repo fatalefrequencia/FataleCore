@@ -56,7 +56,26 @@ namespace FataleCore.Controllers
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("User not found");
 
-            return Ok(user);
+            // Fetch artist metadata if available
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+            
+            return Ok(new { 
+                user.Id,
+                user.Username,
+                user.Email,
+                user.CreditsBalance,
+                user.Biography,
+                user.ProfilePictureUrl,
+                user.ResidentSectorId,
+                user.BannerUrl, // Added
+                user.ThemeColor, // Added
+                user.TextColor, // Added
+                user.BackgroundColor, // Added
+                user.IsGlass, // Added
+                IsLive = artist?.IsLive ?? false,
+                FeaturedTrackId = artist?.FeaturedTrackId,
+                SectorId = artist?.SectorId
+            });
         }
 
         [HttpGet("{id}")]
@@ -82,7 +101,38 @@ namespace FataleCore.Controllers
 
             // Update text fields if provided
             if (!string.IsNullOrEmpty(dto.Username)) user.Username = dto.Username;
-            if (dto.Biography != null) user.Biography = dto.Biography; // Allow empty string to clear bio via DTO if needed using explicit empty string, but null means no change usually. Let's assume frontend sends empty string to clear.
+            if (dto.Biography != null) user.Biography = dto.Biography;
+            if (dto.ResidentSectorId.HasValue) user.ResidentSectorId = dto.ResidentSectorId.Value;
+            
+            // Handle Artist-specific fields
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artist == null)
+            {
+                // Create minimal artist profile if missing
+                artist = new Artist 
+                { 
+                    UserId = userId,
+                    Name = user.Username ?? "Unknown",
+                    Bio = user.Biography ?? "",
+                    ImageUrl = user.ProfilePictureUrl ?? "",
+                    SectorId = user.ResidentSectorId
+                };
+                _context.Artists.Add(artist);
+            }
+
+            if (dto.ResidentSectorId.HasValue) artist.SectorId = dto.ResidentSectorId.Value;
+
+            if (dto.IsLive.HasValue) artist.IsLive = dto.IsLive.Value;
+            
+            // Handle Quiet Mode (-1) or specific track
+            if (dto.FeaturedTrackId.HasValue) 
+            {
+                artist.FeaturedTrackId = dto.FeaturedTrackId.Value == -1 ? null : dto.FeaturedTrackId.Value;
+            }
+            
+            artist.Name = user.Username ?? "Unknown";
+            artist.Bio = user.Biography ?? "";
+            artist.ImageUrl = user.ProfilePictureUrl ?? "";
 
             // Handle Profile Picture
             if (dto.ProfilePicture != null && dto.ProfilePicture.Length > 0)
@@ -104,6 +154,46 @@ namespace FataleCore.Controllers
                 // Update URL (Frontend should serve static files from /uploads or via a controller)
                 // Assuming we serve static files or have an endpoint. Ideally we store relative path.
                 user.ProfilePictureUrl = $"/uploads/avatars/{fileName}";
+            }
+
+            // Banner Upload
+            if (dto.Banner != null && dto.Banner.Length > 0)
+            {
+                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "banners");
+                if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+
+                var fileName = $"{user.Id}_banner_{DateTime.UtcNow.Ticks}{Path.GetExtension(dto.Banner.FileName)}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.Banner.CopyToAsync(stream);
+                }
+
+                user.BannerUrl = $"/uploads/banners/{fileName}";
+            }
+
+            // Theme Color
+            if (!string.IsNullOrEmpty(dto.ThemeColor))
+            {
+                user.ThemeColor = dto.ThemeColor;
+            }
+
+            // Text Color
+            if (!string.IsNullOrEmpty(dto.TextColor))
+            {
+                user.TextColor = dto.TextColor;
+            }
+
+            // Background Color
+            if (!string.IsNullOrEmpty(dto.BackgroundColor))
+            {
+                user.BackgroundColor = dto.BackgroundColor;
+            }
+
+            if (dto.IsGlass.HasValue)
+            {
+                user.IsGlass = dto.IsGlass.Value;
             }
 
             await _context.SaveChangesAsync();

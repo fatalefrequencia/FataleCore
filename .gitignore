@@ -1,17 +1,24 @@
-# Database
+## [Visual Studio]
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.doccache
+
+## [Rider]
+.idea/
+
+## [Build Results]
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+## [Databases]
 *.db
 *.db-shm
 *.db-wal
 
-# Build results
-[Bb]in/
-[Oo]bj/
-
-# User-specific files
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Logs
-*.log
+## [OS]
+.DS_Store
+Thumbs.db
