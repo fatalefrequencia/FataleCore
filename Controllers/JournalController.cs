@@ -54,7 +54,7 @@ namespace FataleCore.Controllers
                 Title = dto.Title,
                 Content = dto.Content,
                 CreatedAt = DateTime.UtcNow,
-                IsPosted = dto.IsPosted,
+                IsPosted = true,
                 IsPinned = dto.IsPinned
             };
 

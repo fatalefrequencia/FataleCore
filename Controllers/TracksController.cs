@@ -96,6 +96,7 @@ namespace FataleCore.Controllers
                     CoverImageUrl = $"/uploads/{coverFileName}",
                     Duration = "0:00", 
                     AlbumId = defaultAlbum.Id,
+                    CreatedAt = DateTime.UtcNow,
                     
                     Price = dto.Price,
                     IsLocked = dto.IsLocked,
@@ -117,13 +118,25 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Track>>> GetTracks()
+        public async Task<ActionResult<IEnumerable<Track>>> GetTracks([FromQuery] string sort = "newest")
         {
-            return await _context.Tracks
+            var query = _context.Tracks
                 .Where(t => !t.IsDelisted)
                 .Include(t => t.Album)
                     .ThenInclude(a => a!.Artist)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (sort == "trending")
+            {
+                // Trending is currently PlayCount weighted by age (if we had age, but let's use PlayCount desc)
+                query = query.OrderByDescending(t => t.PlayCount);
+            }
+            else
+            {
+                query = query.OrderByDescending(t => t.CreatedAt);
+            }
+
+            return await query.ToListAsync();
         }
 
         [HttpGet("{id}")]

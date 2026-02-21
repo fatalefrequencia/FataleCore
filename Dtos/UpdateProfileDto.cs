@@ -9,6 +9,7 @@ namespace FataleCore.Dtos
         public int? ResidentSectorId { get; set; }
         public IFormFile? ProfilePicture { get; set; }
         public IFormFile? Banner { get; set; } // New
+        public IFormFile? WallpaperVideo { get; set; } // New
         public string? ThemeColor { get; set; } // New
         public string? TextColor { get; set; } // New
         public string? BackgroundColor { get; set; } // New

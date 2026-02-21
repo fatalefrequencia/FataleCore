@@ -19,6 +19,7 @@ namespace FataleCore.Models
         public string? TextColor { get; set; } = "#ffffff";
         public string? BackgroundColor { get; set; } = "#000000";
         public bool IsGlass { get; set; } = false;
+        public string? WallpaperVideoUrl { get; set; }
 
         // Discovery Map Residency
         public int? ResidentSectorId { get; set; }

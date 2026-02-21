@@ -72,6 +72,7 @@ namespace FataleCore.Controllers
                 user.TextColor, // Added
                 user.BackgroundColor, // Added
                 user.IsGlass, // Added
+                user.WallpaperVideoUrl, // Added
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId,
                 SectorId = artist?.SectorId
@@ -171,6 +172,23 @@ namespace FataleCore.Controllers
                 }
 
                 user.BannerUrl = $"/uploads/banners/{fileName}";
+            }
+
+            // Wallpaper Video Upload
+            if (dto.WallpaperVideo != null && dto.WallpaperVideo.Length > 0)
+            {
+                var wallpaperPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "wallpapers");
+                if (!Directory.Exists(wallpaperPath)) Directory.CreateDirectory(wallpaperPath);
+
+                var wallpaperFileName = $"{user.Id}_wallpaper_{DateTime.UtcNow.Ticks}{Path.GetExtension(dto.WallpaperVideo.FileName)}";
+                var wallpaperFilePath = Path.Combine(wallpaperPath, wallpaperFileName);
+
+                using (var stream = new FileStream(wallpaperFilePath, FileMode.Create))
+                {
+                    await dto.WallpaperVideo.CopyToAsync(stream);
+                }
+
+                user.WallpaperVideoUrl = $"/uploads/wallpapers/{wallpaperFileName}";
             }
 
             // Theme Color

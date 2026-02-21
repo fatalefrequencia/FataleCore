@@ -24,6 +24,7 @@ namespace FataleCore.Models
         public bool IsDelisted { get; set; } = false; // Hidden from store but kept for previous purchasers
         public bool IsPinned { get; set; } = false;
         public bool IsPosted { get; set; } = false;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Analytics
         public int PlayCount { get; set; } = 0;

@@ -179,6 +179,46 @@ namespace FataleCore.Migrations
                     b.ToTable("DiscoveryEvents");
                 });
 
+            modelBuilder.Entity("FataleCore.Models.FeedInteraction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InteractionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("FeedInteractions");
+                });
+
             modelBuilder.Entity("FataleCore.Models.JournalEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -297,6 +337,46 @@ namespace FataleCore.Migrations
                     b.ToTable("PlaylistTracks");
                 });
 
+            modelBuilder.Entity("FataleCore.Models.StudioContent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPosted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("StudioContents");
+                });
+
             modelBuilder.Entity("FataleCore.Models.Subscription", b =>
                 {
                     b.Property<int>("Id")
@@ -339,6 +419,9 @@ namespace FataleCore.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Duration")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -358,6 +441,12 @@ namespace FataleCore.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsLocked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPosted")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("MapX")
@@ -479,6 +568,9 @@ namespace FataleCore.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsGlass")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -497,6 +589,9 @@ namespace FataleCore.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WallpaperVideoUrl")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -580,7 +675,6 @@ namespace FataleCore.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StripeSubscriptionId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Tier")
@@ -698,6 +792,23 @@ namespace FataleCore.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FataleCore.Models.FeedInteraction", b =>
+                {
+                    b.HasOne("FataleCore.Models.FeedInteraction", "Parent")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentId");
+
+                    b.HasOne("FataleCore.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FataleCore.Models.JournalEntry", b =>
                 {
                     b.HasOne("FataleCore.Models.User", "User")
@@ -737,6 +848,17 @@ namespace FataleCore.Migrations
                     b.Navigation("Playlist");
 
                     b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("FataleCore.Models.StudioContent", b =>
+                {
+                    b.HasOne("FataleCore.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FataleCore.Models.Subscription", b =>
@@ -842,6 +964,11 @@ namespace FataleCore.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FataleCore.Models.FeedInteraction", b =>
+                {
+                    b.Navigation("Replies");
                 });
 #pragma warning restore 612, 618
         }

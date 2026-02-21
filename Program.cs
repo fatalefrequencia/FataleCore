@@ -76,11 +76,11 @@ using (var scope = app.Services.CreateScope())
     } catch { }
 
     // Idempotent column additions for other tables (Safety measures)
-    /*
     string[] patches = {
         "ALTER TABLE Tracks ADD COLUMN Source TEXT;",
         "ALTER TABLE Tracks ADD COLUMN IsPinned INTEGER DEFAULT 0;",
         "ALTER TABLE Tracks ADD COLUMN IsPosted INTEGER DEFAULT 0;",
+        "ALTER TABLE Tracks ADD COLUMN CreatedAt TEXT;",
         "ALTER TABLE Artists ADD COLUMN IsLive INTEGER DEFAULT 0;",
         "ALTER TABLE Artists ADD COLUMN FeaturedTrackId INTEGER;",
         "ALTER TABLE Users ADD COLUMN BannerUrl TEXT;",
@@ -88,6 +88,7 @@ using (var scope = app.Services.CreateScope())
         "ALTER TABLE Users ADD COLUMN TextColor TEXT DEFAULT '#ffffff';",
         "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
         "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
+        "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
         "ALTER TABLE StudioContents ADD COLUMN IsPinned INTEGER DEFAULT 0;",
         @"CREATE TABLE IF NOT EXISTS StudioContents (
             Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,15 +100,28 @@ using (var scope = app.Services.CreateScope())
             CreatedAt TEXT NOT NULL,
             IsPosted INTEGER DEFAULT 0,
             IsPinned INTEGER DEFAULT 0
+        );",
+        @"CREATE TABLE IF NOT EXISTS FeedInteractions (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            UserId INTEGER NOT NULL,
+            ItemType TEXT NOT NULL,
+            ItemId INTEGER NOT NULL,
+            InteractionType TEXT NOT NULL,
+            Content TEXT,
+            CreatedAt TEXT NOT NULL
         );"
     };
-    */
 
-    /*
     foreach (var patch in patches) {
-        // try { db.Database.ExecuteSqlRaw(patch); } catch {  }
+        try { db.Database.ExecuteSqlRaw(patch); } catch {  }
     }
-    */
+
+    // Ensure no NULL values for CreatedAt (Safety for Feed sorting)
+    try {
+        db.Database.ExecuteSqlRaw("UPDATE Tracks SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
+        db.Database.ExecuteSqlRaw("UPDATE StudioContents SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
+    } catch { }
+
 
     Console.WriteLine("[DATABASE] Schema check complete.");
 
