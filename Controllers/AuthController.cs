@@ -25,32 +25,42 @@ namespace FataleCore.Controllers {
         {
             try
             {
+                // 0. Validation
+                if (_context.Users.Any(u => u.Username == request.Username))
+                    return BadRequest(new { error = "Protocol Error: Username is already allocated in the core." });
+                
+                if (_context.Users.Any(u => u.Email == request.Email))
+                    return BadRequest(new { error = "Protocol Error: Email transmission already registered." });
+
                 // 1. Crear el usuario
                 var newUser = new User
                 {
                     Username = request.Username,
                     Email = request.Email,
-                    PasswordHash = request.Password // (En prod usaríamos hash real, para dev está bien)
+                    PasswordHash = request.Password, // (En prod usaríamos hash real, para dev está bien)
+                    Biography = "",
+                    ProfilePictureUrl = "",
+                    BannerUrl = "",
+                    WallpaperVideoUrl = ""
                 };
 
-                // 2. Guardar en DB
-                _context.Users.Add(newUser);
-                _context.SaveChanges();
-
-                // 3. Create automatic Artist Profile (Hidden by default)
+                // 2. Create automatic Artist Profile (Hidden by default)
                 var artist = new Artist
                 {
                     Name = newUser.Username,
                     Bio = "New Artist Profile", // Hidden from map
                     ImageUrl = "", // No default image
-                    UserId = newUser.Id // Link to user
+                    User = newUser // EF handles the FK assignment after user gets Id
                 };
+
+                // 3. Save both in a single transaction
+                _context.Users.Add(newUser);
                 _context.Artists.Add(artist);
                 _context.SaveChanges();
 
                 return Ok(new 
                 { 
-                    message = "User created!", 
+                    message = "Identity Synchronized!", 
                     token = "fake-jwt-token-for-dev",
                     userId = newUser.Id,
                     username = newUser.Username,
