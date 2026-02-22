@@ -32,12 +32,24 @@ namespace FataleCore.Controllers
 
             // Get the list of artists/users the current user follows
             var followedArtistIds = new List<int>();
+            var followedUserIds = new List<int>();
             if (currentUserId.HasValue)
             {
                 followedArtistIds = await _context.UserArtistLikes
                     .Where(ual => ual.UserId == currentUserId.Value)
                     .Select(ual => ual.ArtistId)
                     .ToListAsync();
+
+                followedUserIds = await _context.Artists
+                    .Where(a => followedArtistIds.Contains(a.Id) && a.UserId.HasValue)
+                    .Select(a => a.UserId!.Value)
+                    .ToListAsync();
+
+                // Also follow yourself to see your own reposts/content in list checks
+                if (!followedUserIds.Contains(currentUserId.Value))
+                {
+                    followedUserIds.Add(currentUserId.Value);
+                }
             }
 
             // 1. Fetch Tracks (User's own or from followed artists)
@@ -74,7 +86,9 @@ namespace FataleCore.Controllers
                     Title = t.Title,
                     Content = t.Genre,
                     Artist = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.Name : "UNKNOWN_SIGNAL",
+                    ArtistId = (t.Album != null && t.Album.Artist != null) ? (int?)t.Album.Artist.Id : null,
                     ArtistUserId = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.UserId : null,
+                    SectorId = t.SectorId ?? (t.Album != null && t.Album.Artist != null ? t.Album.Artist.SectorId : null),
                     ImageUrl = t.CoverImageUrl,
                     Source = t.Source ?? t.FilePath,
                     CreatedAt = t.CreatedAt,
@@ -89,118 +103,73 @@ namespace FataleCore.Controllers
                 .ToListAsync();
 
             // 2. Fetch Studio Content (User's own or from followed users)
-            var studioQuery = _context.StudioContents
-                .Include(s => s.User)
-                .AsQueryable();
-
-            if (currentUserId.HasValue)
-            {
-                var followedUserIds = await _context.Artists
-                    .Where(a => followedArtistIds.Contains(a.Id))
-                    .Select(a => a.UserId)
-                    .ToListAsync();
-
-                studioQuery = studioQuery.Where(s => 
-                    s.UserId == currentUserId.Value || 
-                    followedUserIds.Contains(s.UserId)
-                );
-            }
-            else
-            {
-                // Guests don't see studio content unless we have a specific public artist
-                studioQuery = studioQuery.Where(s => false); 
-            }
-
-            var studio = await studioQuery
-                .OrderByDescending(s => s.CreatedAt)
-                .Take(25)
-                .Select(s => new FeedItem {
-                    Id = "studio-" + s.Id,
-                    ItemId = s.Id,
-                    Type = "studio",
-                    Title = s.Title,
-                    Content = s.Description ?? string.Empty,
-                    Artist = s.User != null ? s.User.Username : "UNKNOWN_SIGNAL",
-                    ArtistUserId = s.UserId,
-                    ImageUrl = s.Url,
-                    CreatedAt = s.CreatedAt,
-                    MediaType = s.Type,
-                    LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "LIKE"),
-                    CommentCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "COMMENT"),
-                    RepostCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "REPOST"),
-                    IsLiked = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "LIKE"),
-                    IsReposted = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "REPOST")
-                })
-                .ToListAsync();
+            var studioItems = await (from s in _context.StudioContents.Include(sc => sc.User)
+                                    join a in _context.Artists on s.UserId equals a.UserId into artists
+                                    from a in artists.DefaultIfEmpty()
+                                    where currentUserId.HasValue ? followedUserIds.Contains(s.UserId) : false
+                                    orderby s.CreatedAt descending
+                                    select new FeedItem {
+                                        Id = "studio-" + s.Id,
+                                        ItemId = s.Id,
+                                        Type = "studio",
+                                        Title = s.Title,
+                                        Content = s.Description ?? string.Empty,
+                                        Artist = s.User != null ? s.User.Username : "UNKNOWN_SIGNAL",
+                                        ArtistId = a != null ? (int?)a.Id : null,
+                                        ArtistUserId = s.UserId,
+                                        SectorId = a != null ? a.SectorId : null,
+                                        ImageUrl = s.Url,
+                                        CreatedAt = s.CreatedAt,
+                                        LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "LIKE"),
+                                        CommentCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "COMMENT"),
+                                        RepostCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "REPOST"),
+                                        IsLiked = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "LIKE"),
+                                        IsReposted = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "REPOST")
+                                    })
+                                    .Take(25)
+                                    .ToListAsync();
 
             // 3. Fetch Journals (User's own or from followed users)
-            var journalsQuery = _context.JournalEntries
-                .Include(j => j.User)
-                .AsQueryable();
-
-            if (currentUserId.HasValue)
-            {
-                var followedUserIds = await _context.Artists
-                    .Where(a => followedArtistIds.Contains(a.Id))
-                    .Select(a => a.UserId)
-                    .ToListAsync();
-
-                journalsQuery = journalsQuery.Where(j => 
-                    j.UserId == currentUserId.Value || 
-                    followedUserIds.Contains(j.UserId)
-                );
-            }
-            else
-            {
-                // Guests see public/tester journals
-                journalsQuery = journalsQuery.Where(j => j.UserId == 3);
-            }
-
-            var journals = await journalsQuery
-                .OrderByDescending(j => j.CreatedAt)
-                .Take(25)
-                .Select(j => new FeedItem {
-                    Id = "journal-" + j.Id,
-                    ItemId = j.Id,
-                    Type = "journal",
-                    Title = j.Title,
-                    Content = j.Content ?? string.Empty,
-                    Artist = j.User != null ? j.User.Username : "UNKNOWN_SIGNAL",
-                    ArtistUserId = j.UserId,
-                    CreatedAt = j.CreatedAt,
-                    LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "LIKE"),
-                    CommentCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "COMMENT"),
-                    RepostCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "REPOST"),
-                    IsLiked = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "LIKE"),
-                    IsReposted = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "REPOST")
-                })
-                .ToListAsync();
+            var journalItems = await (from j in _context.JournalEntries.Include(je => je.User)
+                                     join a in _context.Artists on j.UserId equals a.UserId into artists
+                                     from a in artists.DefaultIfEmpty()
+                                     where currentUserId.HasValue ? followedUserIds.Contains(j.UserId) : (j.UserId == 3)
+                                     orderby j.CreatedAt descending
+                                     select new FeedItem {
+                                         Id = "journal-" + j.Id,
+                                         ItemId = j.Id,
+                                         Type = "journal",
+                                         Title = j.Title,
+                                         Content = j.Content ?? string.Empty,
+                                         Artist = j.User != null ? j.User.Username : "UNKNOWN_SIGNAL",
+                                         ArtistId = a != null ? (int?)a.Id : null,
+                                         ArtistUserId = j.UserId,
+                                         SectorId = a != null ? a.SectorId : null,
+                                         CreatedAt = j.CreatedAt,
+                                         LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "LIKE"),
+                                         CommentCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "COMMENT"),
+                                         RepostCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "REPOST"),
+                                         IsLiked = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "LIKE"),
+                                         IsReposted = currentUserId.HasValue && _context.FeedInteractions.Any(i => i.UserId == currentUserId.Value && i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "REPOST")
+                                     })
+                                     .Take(25)
+                                     .ToListAsync();
 
             // 4. Fetch RE_SYNCs (Reposts) from followed users
-            var followedUserIds = new List<int>();
-            if (currentUserId.HasValue)
-            {
-                followedUserIds = await _context.Artists
-                    .Where(a => followedArtistIds.Contains(a.Id))
-                    .Select(a => a.UserId)
-                    .ToListAsync();
-                
-                // Also follow yourself to see your own reposts in feed
-                followedUserIds.Add(currentUserId.Value);
-            }
 
             var repostInteractions = await _context.FeedInteractions
                 .Where(i => i.InteractionType == "REPOST" && followedUserIds.Contains(i.UserId))
                 .Include(i => i.User)
                 .OrderByDescending(i => i.CreatedAt)
-                .Take(20)
+                .Take(50)
                 .ToListAsync();
 
             var repostItems = new List<FeedItem>();
             foreach (var rep in repostInteractions)
             {
                 FeedItem? item = null;
-                if (rep.ItemType == "track")
+                var type = rep.ItemType?.ToLower() ?? "";
+                if (type == "track")
                 {
                     var t = await _context.Tracks
                         .Include(track => track.Album).ThenInclude(a => a!.Artist)
@@ -215,7 +184,9 @@ namespace FataleCore.Controllers
                             Title = t.Title,
                             Content = t.Genre,
                             Artist = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.Name : "UNKNOWN_SIGNAL",
+                            ArtistId = (t.Album != null && t.Album.Artist != null) ? (int?)t.Album.Artist.Id : null,
                             ArtistUserId = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.UserId : null,
+                            SectorId = t.SectorId ?? (t.Album != null && t.Album.Artist != null ? t.Album.Artist.SectorId : null),
                             ImageUrl = t.CoverImageUrl,
                             Source = t.Source ?? t.FilePath,
                             CreatedAt = rep.CreatedAt, // Time of RE_SYNC
@@ -226,7 +197,7 @@ namespace FataleCore.Controllers
                         };
                     }
                 }
-                else if (rep.ItemType == "studio")
+                else if (type == "studio")
                 {
                     var s = await _context.StudioContents.Include(sc => sc.User).FirstOrDefaultAsync(sc => sc.Id == rep.ItemId);
                     if (s != null)
@@ -239,7 +210,9 @@ namespace FataleCore.Controllers
                             Title = s.Title,
                             Content = s.Description ?? string.Empty,
                             Artist = s.User != null ? s.User.Username : "UNKNOWN_SIGNAL",
+                            ArtistId = s.User != null ? _context.Artists.Where(a => a.UserId == s.UserId).Select(a => (int?)a.Id).FirstOrDefault() : null,
                             ArtistUserId = s.UserId,
+                            SectorId = s.User != null ? _context.Artists.Where(a => a.UserId == s.UserId).Select(a => a.SectorId).FirstOrDefault() : null,
                             ImageUrl = s.Url,
                             CreatedAt = rep.CreatedAt,
                             MediaType = s.Type,
@@ -248,7 +221,7 @@ namespace FataleCore.Controllers
                         };
                     }
                 }
-                else if (rep.ItemType == "journal")
+                else if (type == "journal")
                 {
                     var j = await _context.JournalEntries.Include(je => je.User).FirstOrDefaultAsync(je => je.Id == rep.ItemId);
                     if (j != null)
@@ -261,7 +234,9 @@ namespace FataleCore.Controllers
                             Title = j.Title,
                             Content = j.Content ?? string.Empty,
                             Artist = j.User != null ? j.User.Username : "UNKNOWN_SIGNAL",
+                            ArtistId = j.User != null ? _context.Artists.Where(a => a.UserId == j.UserId).Select(a => (int?)a.Id).FirstOrDefault() : null,
                             ArtistUserId = j.UserId,
+                            SectorId = j.User != null ? _context.Artists.Where(a => a.UserId == j.UserId).Select(a => a.SectorId).FirstOrDefault() : null,
                             CreatedAt = rep.CreatedAt,
                             RepostedBy = rep.User?.Username ?? "RESERVED_NODE",
                             IsOriginalSignal = false
@@ -301,9 +276,9 @@ namespace FataleCore.Controllers
                 }
             };
 
-            var combined = tracks.Concat(studio).Concat(journals).Concat(repostItems).Concat(shoutouts)
+            var combined = tracks.Concat(studioItems).Concat(journalItems).Concat(repostItems).Concat(shoutouts)
                 .OrderByDescending(x => x.CreatedAt)
-                .Take(50)
+                .Take(100)
                 .ToList();
 
             return Ok(combined);
@@ -317,7 +292,9 @@ namespace FataleCore.Controllers
             public string Title { get; set; } = string.Empty;
             public string Content { get; set; } = string.Empty;
             public string Artist { get; set; } = string.Empty;
+            public int? ArtistId { get; set; }
             public int? ArtistUserId { get; set; }
+            public int? SectorId { get; set; }
             public string? ImageUrl { get; set; }
             public string? Source { get; set; }
             public DateTime CreatedAt { get; set; }

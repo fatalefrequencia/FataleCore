@@ -28,6 +28,8 @@ namespace FataleCore.Data
         public DbSet<JournalEntry> JournalEntries { get; set; }
         public DbSet<StudioContent> StudioContents { get; set; }
         public DbSet<FeedInteraction> FeedInteractions { get; set; }
+        public DbSet<Station> Stations { get; set; }
+        public DbSet<StationFavorite> StationFavorites { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

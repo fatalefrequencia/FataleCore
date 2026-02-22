@@ -122,7 +122,7 @@ namespace FataleCore.Controllers
                 "track" => await _context.Tracks
                     .Where(t => t.Id == id)
                     .Include(t => t.Album)
-                    .ThenInclude(a => a.Artist)
+                    .ThenInclude(a => a!.Artist)
                     .Select(t => t.Album != null && t.Album.Artist != null ? t.Album.Artist.UserId : null)
                     .FirstOrDefaultAsync(),
                 "studio" => await _context.StudioContents
