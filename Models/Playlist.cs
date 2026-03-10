@@ -15,6 +15,8 @@ namespace FataleCore.Models
         public string ImageUrl { get; set; } = string.Empty; // Required for Cyber_Pod
         
         public bool IsPublic { get; set; } = true;
+        public bool IsPinned { get; set; } = false;
+        public bool IsPosted { get; set; } = false;
         
         public int UserId { get; set; }
         public int TrackCount { get; set; } = 0;

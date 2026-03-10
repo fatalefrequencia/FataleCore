@@ -30,11 +30,33 @@ namespace FataleCore.Data
         public DbSet<FeedInteraction> FeedInteractions { get; set; }
         public DbSet<Station> Stations { get; set; }
         public DbSet<StationFavorite> StationFavorites { get; set; }
+        public DbSet<Community> Communities { get; set; }
+        
+        // Organic Intelligence
+        public DbSet<UserListeningEvent> UserListeningEvents { get; set; }
+        public DbSet<TrackFingerprint> TrackFingerprints { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             // Suppress the pending model changes warning to allow manual schema updates in Program.cs
             optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Community>()
+                .HasOne(c => c.Founder)
+                .WithMany()
+                .HasForeignKey(c => c.FounderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Community>()
+                .HasMany(c => c.Members)
+                .WithOne(u => u.Community)
+                .HasForeignKey(u => u.CommunityId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

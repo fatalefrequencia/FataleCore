@@ -17,9 +17,27 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Artist>>> GetArtists()
+        public async Task<IActionResult> GetArtists()
         {
-            return await _context.Artists.ToListAsync();
+            var artists = await _context.Artists
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Name,
+                    a.Bio,
+                    a.ImageUrl,
+                    a.MapX,
+                    a.MapY,
+                    a.SectorId,
+                    a.CreditsBalance,
+                    a.UserId,
+                    a.IsLive,
+                    a.FeaturedTrackId,
+                    CommunityId = a.User != null ? a.User.CommunityId : null
+                })
+                .ToListAsync();
+
+            return Ok(artists);
         }
 
         [HttpGet("{id}")]

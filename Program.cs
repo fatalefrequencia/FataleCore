@@ -15,6 +15,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // 1.5 Service Registration
 builder.Services.AddScoped<FataleCore.Services.ISubscriptionService, FataleCore.Services.SubscriptionService>();
+builder.Services.AddScoped<FataleCore.Services.Intelligence.IIntelligenceService, FataleCore.Services.Intelligence.IntelligenceService>();
+builder.Services.AddHostedService<FataleCore.Services.Intelligence.MeditationWorkerService>();
 
 // 2. CORS Configuration (Explicit)
 builder.Services.AddCors(options =>
@@ -91,6 +93,8 @@ using (var scope = app.Services.CreateScope())
         "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
         "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
         "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
+        "ALTER TABLE Playlists ADD COLUMN IsPinned INTEGER DEFAULT 0;",
+        "ALTER TABLE Playlists ADD COLUMN IsPosted INTEGER DEFAULT 0;",
         "UPDATE Users SET Biography = '' WHERE Biography IS NULL;",
         "UPDATE Users SET ProfilePictureUrl = '' WHERE ProfilePictureUrl IS NULL;",
         "ALTER TABLE StudioContents ADD COLUMN IsPinned INTEGER DEFAULT 0;",
@@ -113,6 +117,27 @@ using (var scope = app.Services.CreateScope())
             InteractionType TEXT NOT NULL,
             Content TEXT,
             CreatedAt TEXT NOT NULL
+        );",
+        @"CREATE TABLE IF NOT EXISTS UserListeningEvents (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            UserId INTEGER NOT NULL,
+            TrackType TEXT NOT NULL,
+            TrackId TEXT NOT NULL,
+            TrackTitle TEXT NOT NULL,
+            Tags TEXT,
+            ListenedAt TEXT NOT NULL,
+            DurationSeconds INTEGER NOT NULL,
+            Source TEXT NOT NULL
+        );",
+        @"CREATE TABLE IF NOT EXISTS TrackFingerprints (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            TrackType TEXT NOT NULL,
+            TrackId TEXT NOT NULL,
+            Tags TEXT,
+            ViewTier INTEGER NOT NULL,
+            ChannelType TEXT NOT NULL,
+            EnrichedAt TEXT NOT NULL,
+            PlayCount INTEGER NOT NULL
         );"
     };
 

@@ -75,7 +75,8 @@ namespace FataleCore.Controllers
                 user.WallpaperVideoUrl, // Added
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId,
-                SectorId = artist?.SectorId
+                SectorId = artist?.SectorId,
+                CommunityId = user.CommunityId
             });
         }
 

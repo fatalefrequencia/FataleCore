@@ -72,7 +72,8 @@ namespace FataleCore.Controllers {
                     backgroundColor = newUser.BackgroundColor,
                     isGlass = newUser.IsGlass,
                     bannerUrl = newUser.BannerUrl,
-                    creditsBalance = newUser.CreditsBalance
+                    creditsBalance = newUser.CreditsBalance,
+                    communityId = newUser.CommunityId
                 });
             }
             catch (Exception ex)
@@ -115,7 +116,8 @@ namespace FataleCore.Controllers {
                     bannerUrl = user.BannerUrl,
                     profilePictureUrl = user.ProfilePictureUrl,
                     biography = user.Biography,
-                    creditsBalance = user.CreditsBalance
+                    creditsBalance = user.CreditsBalance,
+                    communityId = user.CommunityId
                 });
             }
             catch (Exception ex)

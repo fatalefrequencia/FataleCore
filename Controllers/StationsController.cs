@@ -154,7 +154,8 @@ namespace FataleCore.Controllers
 
             station.IsLive = true;
             station.CurrentSessionTitle = request.SessionTitle;
-            station.CurrentTrackId = request.TrackId;
+            station.Description = request.Description;
+            station.CurrentTrackId = null; // Radio broadcast — not tied to a single track
             
             await _context.SaveChangesAsync();
 
@@ -172,6 +173,7 @@ namespace FataleCore.Controllers
 
             station.IsLive = false;
             station.CurrentSessionTitle = null;
+            station.Description = null;
             station.CurrentTrackId = null;
 
             await _context.SaveChangesAsync();
@@ -182,7 +184,7 @@ namespace FataleCore.Controllers
         public class GoLiveRequest
         {
             public string SessionTitle { get; set; } = string.Empty;
-            public int? TrackId { get; set; }
+            public string? Description { get; set; }
         }
     }
 }

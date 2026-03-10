@@ -23,5 +23,9 @@ namespace FataleCore.Models
 
         // Discovery Map Residency
         public int? ResidentSectorId { get; set; }
+        public int? CommunityId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("CommunityId")]
+        public Community? Community { get; set; }
     }
 }

@@ -35,9 +35,9 @@ namespace FataleCore.Controllers
         [HttpGet("user/{targetUserId}")]
         public async Task<ActionResult<IEnumerable<JournalEntry>>> GetUserJournal(int targetUserId)
         {
-            // Only return posted entries for other users
+            // Return all entries (previously restricted to posted only)
             return await _context.JournalEntries
-                .Where(j => j.UserId == targetUserId && j.IsPosted)
+                .Where(j => j.UserId == targetUserId)
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
         }

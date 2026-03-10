@@ -154,6 +154,34 @@ namespace FataleCore.Controllers
             return Ok(new { message = "Track removed" });
         }
 
+        // POST: api/Playlists/{id}/toggle-pin
+        [HttpPost("{id}/toggle-pin")]
+        public async Task<IActionResult> TogglePin(int id, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            playlist.IsPinned = !playlist.IsPinned;
+            await _context.SaveChangesAsync();
+            return Ok(new { isPinned = playlist.IsPinned });
+        }
+
+        // POST: api/Playlists/{id}/toggle-post
+        [HttpPost("{id}/toggle-post")]
+        public async Task<IActionResult> TogglePost(int id, [FromHeader(Name = "UserId")] int userId)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            playlist.IsPosted = !playlist.IsPosted;
+            await _context.SaveChangesAsync();
+            return Ok(new { isPosted = playlist.IsPosted });
+        }
+
+        // DELETE: api/Playlists/{id}
+
         // DELETE: api/Playlists/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePlaylist(int id, [FromHeader(Name = "UserId")] int userId)

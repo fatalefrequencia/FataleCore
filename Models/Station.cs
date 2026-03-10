@@ -18,6 +18,7 @@ namespace FataleCore.Models
         // Live Status
         public bool IsLive { get; set; } = false;
         public string? CurrentSessionTitle { get; set; }
+        public string? Description { get; set; } // Broadcast session description / tagline
         public int? CurrentTrackId { get; set; }
         public int ListenerCount { get; set; } = 0;
         
