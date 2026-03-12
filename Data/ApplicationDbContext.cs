@@ -31,6 +31,7 @@ namespace FataleCore.Data
         public DbSet<Station> Stations { get; set; }
         public DbSet<StationFavorite> StationFavorites { get; set; }
         public DbSet<Community> Communities { get; set; }
+        public DbSet<CommunityMessage> CommunityMessages { get; set; }
         
         // Organic Intelligence
         public DbSet<UserListeningEvent> UserListeningEvents { get; set; }

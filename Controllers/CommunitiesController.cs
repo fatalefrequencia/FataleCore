@@ -3,12 +3,12 @@ using FataleCore.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace FataleCore.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [AllowAnonymous]
     public class CommunitiesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -26,14 +26,14 @@ namespace FataleCore.Controllers
                 .Include(c => c.Founder)
                 .Select(c => new
                 {
-                    c.Id,
-                    c.Name,
-                    c.Description,
-                    c.SectorId,
-                    c.CreatedAt,
-                    FounderName = c.Founder != null ? c.Founder.Username : "System",
-                    FounderId = c.FounderUserId,
-                    MemberCount = _context.Users.Count(u => u.CommunityId == c.Id)
+                    id = c.Id,
+                    name = c.Name,
+                    description = c.Description,
+                    sectorId = c.SectorId,
+                    createdAt = c.CreatedAt,
+                    founderName = c.Founder != null ? c.Founder.Username : "System",
+                    founderId = c.FounderUserId,
+                    memberCount = _context.Users.Count(u => u.CommunityId == c.Id)
                 })
                 .ToListAsync();
 
@@ -49,18 +49,17 @@ namespace FataleCore.Controllers
 
         // POST: api/communities
         [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> CreateCommunity([FromBody] CreateCommunityDto dto)
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateCommunity([FromBody] CreateCommunityDto dto, [FromHeader(Name = "UserId")] int userId)
         {
-            string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                return Unauthorized(new { message = "Invalid token" });
+            if (userId <= 0)
+                return Unauthorized(new { message = "Invalid or missing User ID header" });
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound(new { message = "User not found" });
 
             // Ensure user has enough credits
-            int creationCost = 500; // E.g., cost to create a community
+            int creationCost = 0; // E.g., cost to create a community
             if (user.CreditsBalance < creationCost)
             {
                 return BadRequest(new { message = $"Insufficient credits. Requires {creationCost} credits." });
@@ -89,12 +88,10 @@ namespace FataleCore.Controllers
 
         // POST: api/communities/{id}/join
         [HttpPost("{id}/join")]
-        [Authorize]
-        public async Task<IActionResult> JoinCommunity(int id)
+        public async Task<IActionResult> JoinCommunity(int id, [FromHeader(Name = "UserId")] int userId)
         {
-            string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                return Unauthorized(new { message = "Invalid token" });
+            if (userId <= 0)
+                return Unauthorized(new { message = "Invalid or missing User ID header" });
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound(new { message = "User not found" });
@@ -110,12 +107,10 @@ namespace FataleCore.Controllers
 
         // POST: api/communities/leave
         [HttpPost("leave")]
-        [Authorize]
-        public async Task<IActionResult> LeaveCommunity()
+        public async Task<IActionResult> LeaveCommunity([FromHeader(Name = "UserId")] int userId)
         {
-            string? userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
-                return Unauthorized(new { message = "Invalid token" });
+            if (userId <= 0)
+                return Unauthorized(new { message = "Invalid or missing User ID header" });
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound(new { message = "User not found" });
@@ -124,6 +119,25 @@ namespace FataleCore.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Left community successfully" });
+        }
+        // GET: api/communities/{id}/members
+        [HttpGet("{id}/members")]
+        public async Task<IActionResult> GetCommunityMembers(int id)
+        {
+            var members = await _context.Users
+                .Where(u => u.CommunityId == id)
+                .Select(u => new
+                {
+                    id = u.Id,
+                    username = u.Username,
+                    profilePictureUrl = u.ProfilePictureUrl,
+                    themeColor = u.ThemeColor,
+                    biography = u.Biography,
+                    isArtist = _context.Artists.Any(a => a.UserId == u.Id)
+                })
+                .ToListAsync();
+
+            return Ok(members);
         }
     }
 }

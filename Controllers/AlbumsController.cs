@@ -161,7 +161,7 @@ namespace FataleCore.Controllers
                         Duration = "0:00",
                         AlbumId = album.Id,
                         CreatedAt = DateTime.UtcNow,
-                        Price = trackDto.Price,
+                        Price = trackDto.Price > 0 ? 1 : 0,
                         IsLocked = trackDto.IsLocked,
                         IsDownloadable = true
                     };

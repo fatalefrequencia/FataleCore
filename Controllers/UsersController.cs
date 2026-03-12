@@ -25,6 +25,16 @@ namespace FataleCore.Controllers
             return await _context.Users.ToListAsync();
         }
 
+        private static string GetSectorColor(int sectorId) => sectorId switch
+        {
+            0 => "#ff006e",
+            1 => "#00ffff",
+            2 => "#ff0000",
+            3 => "#aaff00",
+            4 => "#bf00ff",
+            _ => "#ff006e"
+        };
+
         // GET: api/Users/search?query=...
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<User>>> SearchUsers([FromQuery] string? query)
@@ -76,21 +86,43 @@ namespace FataleCore.Controllers
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId,
                 SectorId = artist?.SectorId,
-                CommunityId = user.CommunityId
+                CommunityId = user.CommunityId,
+                CommunityName = user.Community?.Name,
+                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
             });
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<IActionResult> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users
+                .Include(u => u.Community)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            return user;
+            return Ok(new
+            {
+                user.Id,
+                user.Username,
+                user.Email,
+                user.CreditsBalance,
+                user.Biography,
+                user.ProfilePictureUrl,
+                user.ResidentSectorId,
+                user.BannerUrl,
+                user.ThemeColor,
+                user.TextColor,
+                user.BackgroundColor,
+                user.IsGlass,
+                user.WallpaperVideoUrl,
+                CommunityId = user.CommunityId,
+                CommunityName = user.Community?.Name,
+                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
+            });
         }
 
         [HttpPut("update-profile")]

@@ -98,7 +98,7 @@ namespace FataleCore.Controllers
                     AlbumId = defaultAlbum.Id,
                     CreatedAt = DateTime.UtcNow,
                     
-                    Price = dto.Price,
+                    Price = dto.Price > 0 ? 1 : 0,
                     IsLocked = dto.IsLocked,
                     IsDownloadable = true
                 };

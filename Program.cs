@@ -138,6 +138,13 @@ using (var scope = app.Services.CreateScope())
             ChannelType TEXT NOT NULL,
             EnrichedAt TEXT NOT NULL,
             PlayCount INTEGER NOT NULL
+        );",
+        @"CREATE TABLE IF NOT EXISTS CommunityMessages (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CommunityId INTEGER NOT NULL,
+            UserId INTEGER NOT NULL,
+            Content TEXT NOT NULL,
+            SentAt TEXT NOT NULL
         );"
     };
 
