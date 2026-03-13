@@ -58,6 +58,7 @@ namespace FataleCore.Controllers
                 .Where(t => !t.IsDelisted)
                 .Include(t => t.Album)
                     .ThenInclude(a => a!.Artist)
+                        .ThenInclude(art => art!.User)
                 .AsQueryable();
 
             if (currentUserId.HasValue)
@@ -88,6 +89,7 @@ namespace FataleCore.Controllers
                     Artist = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.Name : "UNKNOWN_SIGNAL",
                     ArtistId = (t.Album != null && t.Album.Artist != null) ? (int?)t.Album.Artist.Id : null,
                     ArtistUserId = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.UserId : null,
+                    CommunityId = (t.Album != null && t.Album.Artist != null && t.Album.Artist.User != null) ? t.Album.Artist.User.CommunityId : null,
                     SectorId = t.SectorId ?? (t.Album != null && t.Album.Artist != null ? t.Album.Artist.SectorId : null),
                     ImageUrl = t.CoverImageUrl,
                     Source = t.Source ?? t.FilePath,
@@ -117,6 +119,7 @@ namespace FataleCore.Controllers
                                         Artist = s.User != null ? s.User.Username : "UNKNOWN_SIGNAL",
                                         ArtistId = a != null ? (int?)a.Id : null,
                                         ArtistUserId = s.UserId,
+                                        CommunityId = s.User != null ? s.User.CommunityId : null,
                                         SectorId = a != null ? a.SectorId : null,
                                         ImageUrl = s.Url,
                                         CreatedAt = s.CreatedAt,
@@ -144,6 +147,7 @@ namespace FataleCore.Controllers
                                          Artist = j.User != null ? j.User.Username : "UNKNOWN_SIGNAL",
                                          ArtistId = a != null ? (int?)a.Id : null,
                                          ArtistUserId = j.UserId,
+                                         CommunityId = j.User != null ? j.User.CommunityId : null,
                                          SectorId = a != null ? a.SectorId : null,
                                          CreatedAt = j.CreatedAt,
                                          LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "journal" && i.ItemId == j.Id && i.InteractionType == "LIKE"),
@@ -186,6 +190,7 @@ namespace FataleCore.Controllers
                             Artist = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.Name : "UNKNOWN_SIGNAL",
                             ArtistId = (t.Album != null && t.Album.Artist != null) ? (int?)t.Album.Artist.Id : null,
                             ArtistUserId = (t.Album != null && t.Album.Artist != null) ? t.Album.Artist.UserId : null,
+                            CommunityId = (t.Album != null && t.Album.Artist != null && t.Album.Artist.User != null) ? t.Album.Artist.User.CommunityId : null,
                             SectorId = t.SectorId ?? (t.Album != null && t.Album.Artist != null ? t.Album.Artist.SectorId : null),
                             ImageUrl = t.CoverImageUrl,
                             Source = t.Source ?? t.FilePath,
@@ -212,6 +217,7 @@ namespace FataleCore.Controllers
                             Artist = s.User != null ? s.User.Username : "UNKNOWN_SIGNAL",
                             ArtistId = s.User != null ? _context.Artists.Where(a => a.UserId == s.UserId).Select(a => (int?)a.Id).FirstOrDefault() : null,
                             ArtistUserId = s.UserId,
+                            CommunityId = s.User != null ? s.User.CommunityId : null,
                             SectorId = s.User != null ? _context.Artists.Where(a => a.UserId == s.UserId).Select(a => a.SectorId).FirstOrDefault() : null,
                             ImageUrl = s.Url,
                             CreatedAt = rep.CreatedAt,
@@ -236,6 +242,7 @@ namespace FataleCore.Controllers
                             Artist = j.User != null ? j.User.Username : "UNKNOWN_SIGNAL",
                             ArtistId = j.User != null ? _context.Artists.Where(a => a.UserId == j.UserId).Select(a => (int?)a.Id).FirstOrDefault() : null,
                             ArtistUserId = j.UserId,
+                            CommunityId = j.User != null ? j.User.CommunityId : null,
                             SectorId = j.User != null ? _context.Artists.Where(a => a.UserId == j.UserId).Select(a => a.SectorId).FirstOrDefault() : null,
                             CreatedAt = rep.CreatedAt,
                             RepostedBy = rep.User?.Username ?? "RESERVED_NODE",
@@ -295,6 +302,7 @@ namespace FataleCore.Controllers
             public int? ArtistId { get; set; }
             public int? ArtistUserId { get; set; }
             public int? SectorId { get; set; }
+            public int? CommunityId { get; set; }
             public string? ImageUrl { get; set; }
             public string? Source { get; set; }
             public DateTime CreatedAt { get; set; }
