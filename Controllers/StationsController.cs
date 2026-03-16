@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using FataleCore.Data;
 using FataleCore.Models;
+using FataleCore.Hubs;
 
 namespace FataleCore.Controllers
 {
@@ -10,10 +12,12 @@ namespace FataleCore.Controllers
     public class StationsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHubContext<RadioHub> _hubContext;
 
-        public StationsController(ApplicationDbContext context)
+        public StationsController(ApplicationDbContext context, IHubContext<RadioHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // GET: api/Stations
@@ -38,6 +42,7 @@ namespace FataleCore.Controllers
                         s.CurrentSessionTitle,
                         s.ListenerCount,
                         ArtistName = s.Artist != null ? s.Artist.Name : "UNKNOWN",
+                        ArtistUserId = s.Artist != null ? s.Artist.UserId : null,
                         CurrentTrack = s.CurrentTrack != null ? new {
                             s.CurrentTrack.Id,
                             s.CurrentTrack.Title,
@@ -75,6 +80,7 @@ namespace FataleCore.Controllers
                     f.Station.CurrentSessionTitle,
                     f.Station.ListenerCount,
                     ArtistName = f.Station.Artist != null ? f.Station.Artist.Name : "UNKNOWN",
+                    ArtistUserId = f.Station.Artist != null ? f.Station.Artist.UserId : null,
                     CurrentTrack = f.Station.CurrentTrack != null ? new {
                         f.Station.CurrentTrack.Id,
                         f.Station.CurrentTrack.Title,
@@ -107,6 +113,7 @@ namespace FataleCore.Controllers
                 station.CurrentSessionTitle,
                 station.ListenerCount,
                 ArtistName = station.Artist != null ? station.Artist.Name : "UNKNOWN",
+                ArtistUserId = station.Artist != null ? station.Artist.UserId : null,
                 CurrentTrack = station.CurrentTrack != null ? new {
                     station.CurrentTrack.Id,
                     station.CurrentTrack.Title,
@@ -150,14 +157,32 @@ namespace FataleCore.Controllers
             if (userId <= 0) return Unauthorized();
 
             var station = await _context.Stations.FirstOrDefaultAsync(s => s.Artist != null && s.Artist.UserId == userId);
-            if (station == null) return NotFound("No station found for this artist.");
+            if (station == null)
+            {
+                var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+                if (artist == null) return NotFound("Artist profile required to create a station.");
+                
+                station = new Station {
+                    Name = artist.Name + " Radio",
+                    ArtistId = artist.Id,
+                    Genre = "Mixed",
+                    Frequency = "100.1",
+                    IsLive = false
+                };
+                _context.Stations.Add(station);
+                await _context.SaveChangesAsync();
+            }
 
             station.IsLive = true;
             station.CurrentSessionTitle = request.SessionTitle;
             station.Description = request.Description;
             station.CurrentTrackId = null; // Radio broadcast — not tied to a single track
+            station.IsChatEnabled = request.IsChatEnabled;
+            station.IsQueueEnabled = request.IsQueueEnabled;
             
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("StationWentLive", new { stationId = station.Id });
 
             return Ok(new { success = true, stationId = station.Id });
         }
@@ -169,7 +194,7 @@ namespace FataleCore.Controllers
             if (userId <= 0) return Unauthorized();
 
             var station = await _context.Stations.FirstOrDefaultAsync(s => s.Artist != null && s.Artist.UserId == userId);
-            if (station == null) return NotFound();
+            if (station == null) return Ok(new { success = true }); // If no station, implicitly not live
 
             station.IsLive = false;
             station.CurrentSessionTitle = null;
@@ -178,6 +203,8 @@ namespace FataleCore.Controllers
 
             await _context.SaveChangesAsync();
 
+            await _hubContext.Clients.All.SendAsync("StationEnded", new { stationId = station.Id });
+
             return Ok(new { success = true });
         }
 
@@ -185,6 +212,8 @@ namespace FataleCore.Controllers
         {
             public string SessionTitle { get; set; } = string.Empty;
             public string? Description { get; set; }
+            public bool IsChatEnabled { get; set; } = true;
+            public bool IsQueueEnabled { get; set; } = true;
         }
     }
 }

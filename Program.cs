@@ -1,5 +1,6 @@
 using FataleCore.Data;
 using FataleCore.Models;
+using FataleCore.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +29,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
-// 3. JWT Authentication Configuration
+// 3. SignalR Registration
+builder.Services.AddSignalR();
+
+// 4. JWT Authentication Configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -38,6 +42,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value ?? "super secret key that is long enough to be secure 1234567890")),
             ValidateIssuer = false,
             ValidateAudience = false
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/radio"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -139,6 +156,9 @@ using (var scope = app.Services.CreateScope())
             EnrichedAt TEXT NOT NULL,
             PlayCount INTEGER NOT NULL
         );",
+        "ALTER TABLE Stations ADD COLUMN Description TEXT;",
+        "ALTER TABLE Stations ADD COLUMN IsChatEnabled INTEGER NOT NULL DEFAULT 1;",
+        "ALTER TABLE Stations ADD COLUMN IsQueueEnabled INTEGER NOT NULL DEFAULT 1;",
         @"CREATE TABLE IF NOT EXISTS CommunityMessages (
             Id INTEGER PRIMARY KEY AUTOINCREMENT,
             CommunityId INTEGER NOT NULL,
@@ -244,5 +264,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<RadioHub>("/hubs/radio");
 
 app.Run();

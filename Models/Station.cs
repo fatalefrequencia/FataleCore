@@ -21,6 +21,8 @@ namespace FataleCore.Models
         public string? Description { get; set; } // Broadcast session description / tagline
         public int? CurrentTrackId { get; set; }
         public int ListenerCount { get; set; } = 0;
+        public bool IsChatEnabled { get; set; } = true;
+        public bool IsQueueEnabled { get; set; } = true;
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
