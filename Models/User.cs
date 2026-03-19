@@ -10,8 +10,8 @@ namespace FataleCore.Models
         public string PasswordHash { get; set; } = string.Empty;
         public int CreditsBalance { get; set; } = 0;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public string Biography { get; set; } = string.Empty;
-        public string ProfilePictureUrl { get; set; } = string.Empty;
+        public string? Biography { get; set; }
+        public string? ProfilePictureUrl { get; set; }
 
         // Personalization
         public string? BannerUrl { get; set; }

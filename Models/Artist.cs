@@ -4,8 +4,8 @@ namespace FataleCore.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string Bio { get; set; } = string.Empty;
-        public string ImageUrl { get; set; } = string.Empty;
+        public string? Bio { get; set; }
+        public string? ImageUrl { get; set; }
 
         // Discovery Map Coordinates
         public int? MapX { get; set; }

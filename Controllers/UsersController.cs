@@ -130,7 +130,9 @@ namespace FataleCore.Controllers
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.Community)
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound("User not found");
 
             // Update text fields if provided
@@ -249,7 +251,31 @@ namespace FataleCore.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Profile updated successfully", user });
+            // Re-fetch artist to get latest data (e.g. FeaturedTrackId)
+            artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == user.Id);
+
+            return Ok(new { 
+                message = "Profile updated successfully",
+                user.Id,
+                user.Username,
+                user.Email,
+                user.CreditsBalance,
+                user.Biography,
+                user.ProfilePictureUrl,
+                user.ResidentSectorId,
+                user.BannerUrl,
+                user.ThemeColor,
+                user.TextColor,
+                user.BackgroundColor,
+                user.IsGlass,
+                user.WallpaperVideoUrl,
+                IsLive = artist?.IsLive ?? false,
+                FeaturedTrackId = artist?.FeaturedTrackId,
+                SectorId = artist?.SectorId,
+                user.CommunityId,
+                CommunityName = user.Community?.Name,
+                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
+            });
         }
 
         // GET: api/User/{id}/following
