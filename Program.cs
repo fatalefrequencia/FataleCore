@@ -287,6 +287,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/", () => "FATALE_CORE_ONLINE_V1");
+app.MapGet("/api/ping", () => "PONG_VERSION_1");
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
 
