@@ -131,7 +131,6 @@ namespace FataleCore.Controllers
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
             var user = await _context.Users
-                .Include(u => u.Community)
                 .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound("User not found");
 
@@ -272,9 +271,7 @@ namespace FataleCore.Controllers
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId,
                 SectorId = artist?.SectorId,
-                user.CommunityId,
-                CommunityName = user.Community?.Name,
-                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
+                user.CommunityId
             });
         }
 

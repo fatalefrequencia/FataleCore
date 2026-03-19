@@ -1,7 +1,7 @@
-using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+namespace FataleCore.Models
 {
     public class User
     {
@@ -25,8 +25,5 @@ using System.ComponentModel.DataAnnotations.Schema;
         // Discovery Map Residency
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
-
-        [JsonIgnore, ForeignKey("CommunityId")]
-        public Community? Community { get; set; }
     }
 }
