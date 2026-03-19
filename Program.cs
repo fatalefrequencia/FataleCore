@@ -10,7 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-// 1. DB Configuration
+// 1. Logging & Config
+Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("PORT") ?? "N/A"}");
+
+// 1.1 DB Configuration
 // In production (Railway), DB lives on the persistent volume at /app/data.
 // Locally it falls back to fatale_core.db in the working directory.
 var dbPath = builder.Configuration.GetConnectionString("Default");
@@ -21,6 +25,7 @@ if (string.IsNullOrWhiteSpace(dbPath))
                     ? "Data Source=/app/data/fatale_core.db"
                     : "Data Source=fatale_core.db");
 }
+Console.WriteLine($"[STARTUP] Database Path: {dbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(dbPath));
 
@@ -283,4 +288,5 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
 
+Console.WriteLine("[STARTUP] Application configured. Starting host...");
 app.Run();

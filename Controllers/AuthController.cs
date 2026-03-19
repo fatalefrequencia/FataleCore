@@ -93,9 +93,8 @@ namespace FataleCore.Controllers {
         public IActionResult Me()
         {
             // Lightweight healthcheck endpoint used by Railway.
-            // Returns 401 if no valid token is present, which is fine —
-            // Railway only checks for a non-5xx response to confirm the app is up.
-            return Unauthorized(new { status = "online", message = "Not authenticated." });
+            // Returns 200 OK to satisfy Railway's healthcheck rule (requires 200-399).
+            return Ok(new { status = "online", message = "System reachable." });
         }
 
         [HttpPost("login")]
