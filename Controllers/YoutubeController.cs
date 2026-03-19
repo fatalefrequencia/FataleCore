@@ -22,6 +22,20 @@ namespace FataleCore.Controllers
             _configuration = configuration;
 
             var apiKey = _configuration["YoutubeSettings:YouTubeApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                apiKey = _configuration["YOUTUBE_API_KEY"] ?? Environment.GetEnvironmentVariable("YOUTUBE_API_KEY");
+            }
+
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                Console.WriteLine("[YOUTUBE] WARNING: YouTube API Key is missing or empty.");
+            }
+            else 
+            {
+                Console.WriteLine($"[YOUTUBE] API Key found (Length: {apiKey.Length})");
+            }
+
             _youtubeService = new YouTubeService(new BaseClientService.Initializer()
             {
                 ApiKey = apiKey,

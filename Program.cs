@@ -40,14 +40,16 @@ if (!string.IsNullOrWhiteSpace(railwayDbUrl))
                 if (parts.Length > 1) password = parts[1];
             }
 
-            dbPath = $"Host={host};Port={port};Database={database};Username={user};Password={password};SslMode=Require;Trust Server Certificate=true;Maximum Pool Size=50;";
-            Console.WriteLine($"[STARTUP] Parsed DATABASE_URL: Host={host}, Port={port}, Database={database}, User={user}");
+            var sslMode = host.EndsWith(".internal", StringComparison.OrdinalIgnoreCase) ? "Disable" : "Prefer";
+            
+            dbPath = $"Host={host};Port={port};Database={database};Username={user};Password={password};SslMode={sslMode};Trust Server Certificate=true;Maximum Pool Size=50;";
+            Console.WriteLine($"[STARTUP] Parsed DATABASE_URL: Host={host}, Port={port}, Database={database}, User={user}, SslMode={sslMode}");
         }
         else 
         {
             // If it's already a connection string format
             dbPath = railwayDbUrl;
-            Console.WriteLine("[STARTUP] Using DATABASE_URL as raw connection string.");
+            Console.WriteLine("[STARTUP] Using DATABASE_URL as raw connection string (no re-parsing).");
         }
     }
     catch (Exception ex)
