@@ -26,7 +26,7 @@ namespace FataleCore.DTOs
         public int StationId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Genre { get; set; } = string.Empty;
-        public decimal Frequency { get; set; }
+        public string Frequency { get; set; } = string.Empty;
         public int ListenerCount { get; set; }
         public string? SessionTitle { get; set; }
         public string DjName { get; set; } = "Unknown DJ";

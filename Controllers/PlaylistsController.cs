@@ -50,7 +50,7 @@ namespace FataleCore.Controllers
             return Ok(new
             {
                 Playlist = playlist.ToDto(),
-                Tracks = tracks.Select(t => t.ToDto())
+                Tracks = tracks.Where(t => t != null).Select(t => t!.ToDto())
             });
         }
 
