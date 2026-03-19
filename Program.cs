@@ -11,8 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 // 1. DB Configuration
+// In production (Railway), DB lives on the persistent volume at /app/data.
+// Locally it falls back to fatale_core.db in the working directory.
+var dbPath = builder.Configuration.GetConnectionString("Default");
+if (string.IsNullOrWhiteSpace(dbPath))
+{
+    dbPath = Environment.GetEnvironmentVariable("DATABASE_PATH")
+             ?? (builder.Environment.IsProduction()
+                    ? "Data Source=/app/data/fatale_core.db"
+                    : "Data Source=fatale_core.db");
+}
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=fatale_core.db"));
+    options.UseSqlite(dbPath));
 
 // 1.5 Service Registration
 builder.Services.AddScoped<FataleCore.Services.ISubscriptionService, FataleCore.Services.SubscriptionService>();
@@ -225,18 +235,22 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Always show Swagger — useful for the shared dev server.
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// Railway handles TLS termination at the proxy level, so HTTPS redirection
+// is intentionally removed to avoid redirect loops inside the container.
+// app.UseHttpsRedirection();
 
 // IMPORTANT: Use CORS before Auth
 app.UseCors("AllowAll");
 
-var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+// In production (Docker/Railway), the app runs from /app so we use that as the base.
+// In development, Directory.GetCurrentDirectory() points to the project root.
+var appBase = app.Environment.IsProduction() ? "/app" : Directory.GetCurrentDirectory();
+
+var uploadsPath = Path.Combine(appBase, "uploads");
 if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);
@@ -248,7 +262,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-var cachePath = Path.Combine(Directory.GetCurrentDirectory(), "Cache");
+var cachePath = Path.Combine(appBase, "Cache");
 if (!Directory.Exists(cachePath))
 {
     Directory.CreateDirectory(cachePath);
