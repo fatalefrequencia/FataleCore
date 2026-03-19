@@ -93,141 +93,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("[DATABASE] Initializing schema...");
+    Console.WriteLine("[DATABASE] Running migrations...");
 
-    // 2. Ensure Schema Consistency (Manual Patching for legacy/custom tables)
-    // Legacy Transactions table (if not managed by EF)
-    try {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS Transactions (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                UserId INTEGER NOT NULL,
-                Type TEXT NOT NULL,
-                Amount INTEGER NOT NULL,
-                Description TEXT,
-                Timestamp TEXT NOT NULL,
-                RelatedUserId INTEGER,
-                TrackId INTEGER
-            );
-        ");
-        Console.WriteLine("[DATABASE] OK: 'Transactions' table verified.");
-    } catch { }
-
-    // Idempotent column additions for other tables (Safety measures)
-    string[] patches = {
-        "ALTER TABLE Tracks ADD COLUMN Source TEXT;",
-        "ALTER TABLE Tracks ADD COLUMN IsPinned INTEGER DEFAULT 0;",
-        "ALTER TABLE Tracks ADD COLUMN IsPosted INTEGER DEFAULT 0;",
-        "ALTER TABLE Tracks ADD COLUMN CreatedAt TEXT;",
-        "ALTER TABLE Artists ADD COLUMN IsLive INTEGER DEFAULT 0;",
-        "ALTER TABLE Artists ADD COLUMN FeaturedTrackId INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
-        "ALTER TABLE Artists ADD COLUMN MapX INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN MapY INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN SectorId INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN UserId INTEGER;",
-        "ALTER TABLE Users ADD COLUMN Biography TEXT DEFAULT '';",
-        "ALTER TABLE Users ADD COLUMN ProfilePictureUrl TEXT DEFAULT '';",
-        "ALTER TABLE Users ADD COLUMN BannerUrl TEXT;",
-        "ALTER TABLE Users ADD COLUMN ThemeColor TEXT DEFAULT '#ff006e';",
-        "ALTER TABLE Users ADD COLUMN TextColor TEXT DEFAULT '#ffffff';",
-        "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
-        "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
-        "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
-        "ALTER TABLE Users ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
-        "ALTER TABLE Playlists ADD COLUMN IsPinned INTEGER DEFAULT 0;",
-        "ALTER TABLE Playlists ADD COLUMN IsPosted INTEGER DEFAULT 0;",
-        "UPDATE Users SET Biography = '' WHERE Biography IS NULL;",
-        "UPDATE Users SET ProfilePictureUrl = '' WHERE ProfilePictureUrl IS NULL;",
-        "ALTER TABLE StudioContents ADD COLUMN IsPinned INTEGER DEFAULT 0;",
-        @"CREATE TABLE IF NOT EXISTS StudioContents (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            UserId INTEGER NOT NULL,
-            Title TEXT NOT NULL,
-            Description TEXT,
-            Url TEXT NOT NULL,
-            Type TEXT NOT NULL,
-            CreatedAt TEXT NOT NULL,
-            IsPosted INTEGER DEFAULT 0,
-            IsPinned INTEGER DEFAULT 0
-        );",
-        @"CREATE TABLE IF NOT EXISTS FeedInteractions (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            UserId INTEGER NOT NULL,
-            ItemType TEXT NOT NULL,
-            ItemId INTEGER NOT NULL,
-            InteractionType TEXT NOT NULL,
-            Content TEXT,
-            CreatedAt TEXT NOT NULL
-        );",
-        @"CREATE TABLE IF NOT EXISTS UserListeningEvents (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            UserId INTEGER NOT NULL,
-            TrackType TEXT NOT NULL,
-            TrackId TEXT NOT NULL,
-            TrackTitle TEXT NOT NULL,
-            Tags TEXT,
-            ListenedAt TEXT NOT NULL,
-            DurationSeconds INTEGER NOT NULL,
-            Source TEXT NOT NULL
-        );",
-        @"CREATE TABLE IF NOT EXISTS TrackFingerprints (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            TrackType TEXT NOT NULL,
-            TrackId TEXT NOT NULL,
-            Tags TEXT,
-            ViewTier INTEGER NOT NULL,
-            ChannelType TEXT NOT NULL,
-            EnrichedAt TEXT NOT NULL,
-            PlayCount INTEGER NOT NULL
-        );",
-        "ALTER TABLE Stations ADD COLUMN Description TEXT;",
-        "ALTER TABLE Stations ADD COLUMN IsChatEnabled INTEGER NOT NULL DEFAULT 1;",
-        "ALTER TABLE Stations ADD COLUMN IsQueueEnabled INTEGER NOT NULL DEFAULT 1;",
-        "ALTER TABLE Stations ADD COLUMN ArtistId INTEGER DEFAULT 0;",
-        "ALTER TABLE Stations ADD COLUMN CurrentTrackId INTEGER;",
-        "ALTER TABLE Stations ADD COLUMN IsLive INTEGER DEFAULT 0;",
-        @"CREATE TABLE IF NOT EXISTS CommunityMessages (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            CommunityId INTEGER NOT NULL,
-            UserId INTEGER NOT NULL,
-            Content TEXT NOT NULL,
-            SentAt TEXT NOT NULL
-        );"
-    };
-
-    foreach (var patch in patches) {
-        try { 
-            db.Database.ExecuteSqlRaw(patch); 
-            Console.WriteLine($"[DATABASE] Patch OK: {patch.Split(' ')[2]}");
-        } catch (Exception ex) {
-            // Ignore "duplicate column/table" errors but keep it quiet
-            if (!ex.Message.Contains("duplicate") && !ex.Message.Contains("already exists"))
-            {
-                // Verbose logging for actual schema errors
-                // Console.WriteLine($"[DATABASE] Patch Note: {patch} - {ex.Message}");
-            }
-        }
-    }
-
-    // Ensure no NULL values for CreatedAt (Safety for Feed sorting)
-    try {
-        db.Database.ExecuteSqlRaw("UPDATE Tracks SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
-        db.Database.ExecuteSqlRaw("UPDATE StudioContents SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
-    } catch { }
-
-
-    Console.WriteLine("[DATABASE] Schema check complete.");
-
-    // 3. Run Standard Migrations (Core Schema Source of Truth)
+    // 1. Run Standard Migrations (Core Schema Source of Truth)
     try {
         db.Database.Migrate();
-        Console.WriteLine("[DATABASE] OK: Migrations applied.");
+        Console.WriteLine("[DATABASE] OK: Migrations applied successfully.");
     } catch (Exception ex) {
         Console.WriteLine("[DATABASE] MIGRATION_NOTICE: " + ex.Message);
+        
+        // Final fallback: try to ensure system data even if migration had a minor conflict
     }
 
-    // 4. Ensure System Data
+    // 2. Ensure System Data
     try {
         var systemArtist = db.Artists.FirstOrDefault(a => a.Name == "The Archive");
         if (systemArtist == null)
@@ -254,12 +132,6 @@ using (var scope = app.Services.CreateScope())
     } catch (Exception ex) {
         Console.WriteLine("[DATABASE] ERROR in system data: " + ex.Message);
     }
-
-    // 5. Cleanup
-    try {
-        db.Database.ExecuteSqlRaw("DELETE FROM UserLikes WHERE YoutubeTrackId IS NOT NULL OR TrackId IS NULL;");
-        Console.WriteLine("[DATABASE] OK: Purged legacy signal interference from 'UserLikes'.");
-    } catch { }
 }
 
 // Configure the HTTP request pipeline.
@@ -305,7 +177,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "FATALE_CORE_ONLINE_V1");
+app.MapGet("/", () => "FATALE_CORE_ONLINE_V1_MIGRATED");
 app.MapGet("/api/ping", () => "PONG_VERSION_1");
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
