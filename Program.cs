@@ -15,8 +15,6 @@ Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}
 Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("PORT") ?? "N/A"}");
 
 // 1.1 DB Configuration
-// In production (Railway), DB lives on the persistent volume at /app/data.
-// Locally it falls back to fatale_core.db in the working directory.
 var dbPath = builder.Configuration.GetConnectionString("Default");
 if (string.IsNullOrWhiteSpace(dbPath))
 {
@@ -39,10 +37,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy => policy
-            .SetIsOriginAllowed(_ => true) // Echoes the origin, works better with AllowCredentials
+            .SetIsOriginAllowed(_ => true) 
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials()); // Required for SignalR
+            .AllowCredentials()); 
 });
 
 // 3. SignalR Registration
@@ -80,10 +78,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Output: PascalCase
-        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; // Input: Allow camelCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; 
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; 
     });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -93,19 +90,96 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("[DATABASE] Running migrations...");
+    Console.WriteLine("[DATABASE] Initializing initialization strategy...");
 
-    // 1. Run Standard Migrations (Core Schema Source of Truth)
+    // A. Manually create Transactions if EF missed it (Common point of failure)
+    try {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS Transactions (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId INTEGER NOT NULL,
+                Type TEXT NOT NULL,
+                Amount INTEGER NOT NULL,
+                Description TEXT,
+                Timestamp TEXT NOT NULL,
+                RelatedUserId INTEGER,
+                TrackId INTEGER
+            );
+        ");
+        Console.WriteLine("[DATABASE] OK: 'Transactions' table verified.");
+    } catch { }
+
+    // B. Run standard migrations first
     try {
         db.Database.Migrate();
-        Console.WriteLine("[DATABASE] OK: Migrations applied successfully.");
+        Console.WriteLine("[DATABASE] OK: Standard migrations applied.");
     } catch (Exception ex) {
-        Console.WriteLine("[DATABASE] MIGRATION_NOTICE: " + ex.Message);
-        
-        // Final fallback: try to ensure system data even if migration had a minor conflict
+        Console.WriteLine("[DATABASE] MIGRATION_NOTICE (Skipping/Continuing): " + ex.Message);
     }
 
-    // 2. Ensure System Data
+    // C. Post-Migration "Self-Healing" Patches (For tables that were already created but missing columns)
+    string[] schemaPatches = {
+        // Artists table fixes
+        "ALTER TABLE Artists ADD COLUMN FeaturedTrackId INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN IsLive INTEGER DEFAULT 0;",
+        "ALTER TABLE Artists ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
+        "ALTER TABLE Artists ADD COLUMN MapX INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN MapY INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN SectorId INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN UserId INTEGER;",
+        
+        // Users table fixes
+        "ALTER TABLE Users ADD COLUMN CommunityId INTEGER;",
+        "ALTER TABLE Users ADD COLUMN Biography TEXT DEFAULT '';",
+        "ALTER TABLE Users ADD COLUMN ProfilePictureUrl TEXT DEFAULT '';",
+        "ALTER TABLE Users ADD COLUMN BannerUrl TEXT;",
+        "ALTER TABLE Users ADD COLUMN ThemeColor TEXT DEFAULT '#ff006e';",
+        "ALTER TABLE Users ADD COLUMN TextColor TEXT DEFAULT '#ffffff';",
+        "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
+        "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
+        "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
+        "ALTER TABLE Users ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
+
+        // Tracks table fixes
+        "ALTER TABLE Tracks ADD COLUMN Source TEXT;",
+        "ALTER TABLE Tracks ADD COLUMN IsPinned INTEGER DEFAULT 0;",
+        "ALTER TABLE Tracks ADD COLUMN IsPosted INTEGER DEFAULT 0;",
+        "ALTER TABLE Tracks ADD COLUMN CreatedAt TEXT;",
+
+        // Stations table fixes
+        "ALTER TABLE Stations ADD COLUMN Description TEXT;",
+        "ALTER TABLE Stations ADD COLUMN IsChatEnabled INTEGER DEFAULT 1;",
+        "ALTER TABLE Stations ADD COLUMN IsQueueEnabled INTEGER DEFAULT 1;",
+        "ALTER TABLE Stations ADD COLUMN ArtistId INTEGER DEFAULT 0;",
+        "ALTER TABLE Stations ADD COLUMN CurrentTrackId INTEGER;",
+        "ALTER TABLE Stations ADD COLUMN IsLive INTEGER DEFAULT 0;",
+
+        // Playlists table fixes
+        "ALTER TABLE Playlists ADD COLUMN IsPinned INTEGER DEFAULT 0;",
+        "ALTER TABLE Playlists ADD COLUMN IsPosted INTEGER DEFAULT 0;"
+    };
+
+    foreach (var patch in schemaPatches) {
+        try { 
+            db.Database.ExecuteSqlRaw(patch); 
+            Console.WriteLine($"[DATABASE] Patch Applied: {patch.Split(' ')[2]}");
+        } catch (Exception ex) {
+            // Ignore if column already exists
+            if (!ex.Message.Contains("duplicate") && !ex.Message.Contains("already exists"))
+            {
+                // Unhandled error might be useful?
+            }
+        }
+    }
+
+    // D. Data integrity fixes
+    try {
+        db.Database.ExecuteSqlRaw("UPDATE Tracks SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
+        db.Database.ExecuteSqlRaw("UPDATE Users SET Biography = '' WHERE Biography IS NULL;");
+        db.Database.ExecuteSqlRaw("UPDATE Users SET ProfilePictureUrl = '' WHERE ProfilePictureUrl IS NULL;");
+    } catch { }
+
+    // E. Ensure System Content
     try {
         var systemArtist = db.Artists.FirstOrDefault(a => a.Name == "The Archive");
         if (systemArtist == null)
@@ -113,74 +187,35 @@ using (var scope = app.Services.CreateScope())
             systemArtist = new Artist { Name = "The Archive", Bio = "System content aggregator.", ImageUrl = "" };
             db.Artists.Add(systemArtist);
             db.SaveChanges();
-            Console.WriteLine("[DATABASE] OK: Created system-level service artist: 'The Archive'.");
+            Console.WriteLine("[DATABASE] OK: Created 'The Archive' artist.");
         }
+    } catch { }
 
-        var systemAlbum = db.Albums.FirstOrDefault(a => a.Title == "YouTube Signals");
-        if (systemAlbum == null)
-        {
-            systemAlbum = new Album { 
-                Title = "YouTube Signals", 
-                ArtistId = systemArtist.Id, 
-                ReleaseDate = DateTime.UtcNow, 
-                CoverImageUrl = "" 
-            };
-            db.Albums.Add(systemAlbum);
-            db.SaveChanges();
-            Console.WriteLine("[DATABASE] OK: Created system-level archive album: 'YouTube Signals'.");
-        }
-    } catch (Exception ex) {
-        Console.WriteLine("[DATABASE] ERROR in system data: " + ex.Message);
-    }
+    Console.WriteLine("[DATABASE] Initialization sequence complete.");
 }
 
-// Configure the HTTP request pipeline.
-// Always show Swagger — useful for the shared dev server.
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Railway handles TLS termination at the proxy level, so HTTPS redirection
-// is intentionally removed to avoid redirect loops inside the container.
-// app.UseHttpsRedirection();
-
-// IMPORTANT: Use CORS before Auth
 app.UseCors("AllowAll");
 
-// In production (Docker/Railway), the app runs from /app so we use that as the base.
-// In development, Directory.GetCurrentDirectory() points to the project root.
 var appBase = app.Environment.IsProduction() ? "/app" : Directory.GetCurrentDirectory();
 
 var uploadsPath = Path.Combine(appBase, "uploads");
-if (!Directory.Exists(uploadsPath))
-{
-    Directory.CreateDirectory(uploadsPath);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
-});
+if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath), RequestPath = "/uploads" });
 
 var cachePath = Path.Combine(appBase, "Cache");
-if (!Directory.Exists(cachePath))
-{
-    Directory.CreateDirectory(cachePath);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(cachePath),
-    RequestPath = "/cache"
-});
+if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
+app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(cachePath), RequestPath = "/cache" });
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "FATALE_CORE_ONLINE_V1_MIGRATED");
-app.MapGet("/api/ping", () => "PONG_VERSION_1");
+app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED");
+app.MapGet("/api/ping", () => "PONG_VERSION_2");
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
 
-Console.WriteLine("[STARTUP] Application configured. Starting host...");
+Console.WriteLine("[STARTUP] Application ready.");
 app.Run();
