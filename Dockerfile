@@ -15,10 +15,10 @@ COPY --from=build /app/publish .
 # Create directories for persistent data, uploads, and cache
 RUN mkdir -p /app/data /app/uploads /app/Cache
 
-# Railway injects PORT env variable dynamically
-ENV ASPNETCORE_HTTP_PORTS=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
+# Railway injects PORT dynamically. We use a shell script as entrypoint so we can
+# read $PORT at container-start time and pass it to ASP.NET Core via ASPNETCORE_URLS.
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "FataleCore.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080} dotnet FataleCore.dll"]
