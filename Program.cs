@@ -121,6 +121,11 @@ using (var scope = app.Services.CreateScope())
         "ALTER TABLE Tracks ADD COLUMN CreatedAt TEXT;",
         "ALTER TABLE Artists ADD COLUMN IsLive INTEGER DEFAULT 0;",
         "ALTER TABLE Artists ADD COLUMN FeaturedTrackId INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
+        "ALTER TABLE Artists ADD COLUMN MapX INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN MapY INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN SectorId INTEGER;",
+        "ALTER TABLE Artists ADD COLUMN UserId INTEGER;",
         "ALTER TABLE Users ADD COLUMN Biography TEXT DEFAULT '';",
         "ALTER TABLE Users ADD COLUMN ProfilePictureUrl TEXT DEFAULT '';",
         "ALTER TABLE Users ADD COLUMN BannerUrl TEXT;",
@@ -129,6 +134,7 @@ using (var scope = app.Services.CreateScope())
         "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
         "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
         "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
+        "ALTER TABLE Users ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
         "ALTER TABLE Playlists ADD COLUMN IsPinned INTEGER DEFAULT 0;",
         "ALTER TABLE Playlists ADD COLUMN IsPosted INTEGER DEFAULT 0;",
         "UPDATE Users SET Biography = '' WHERE Biography IS NULL;",
@@ -178,6 +184,9 @@ using (var scope = app.Services.CreateScope())
         "ALTER TABLE Stations ADD COLUMN Description TEXT;",
         "ALTER TABLE Stations ADD COLUMN IsChatEnabled INTEGER NOT NULL DEFAULT 1;",
         "ALTER TABLE Stations ADD COLUMN IsQueueEnabled INTEGER NOT NULL DEFAULT 1;",
+        "ALTER TABLE Stations ADD COLUMN ArtistId INTEGER DEFAULT 0;",
+        "ALTER TABLE Stations ADD COLUMN CurrentTrackId INTEGER;",
+        "ALTER TABLE Stations ADD COLUMN IsLive INTEGER DEFAULT 0;",
         @"CREATE TABLE IF NOT EXISTS CommunityMessages (
             Id INTEGER PRIMARY KEY AUTOINCREMENT,
             CommunityId INTEGER NOT NULL,
@@ -188,7 +197,17 @@ using (var scope = app.Services.CreateScope())
     };
 
     foreach (var patch in patches) {
-        try { db.Database.ExecuteSqlRaw(patch); } catch {  }
+        try { 
+            db.Database.ExecuteSqlRaw(patch); 
+            Console.WriteLine($"[DATABASE] Patch OK: {patch.Split(' ')[2]}");
+        } catch (Exception ex) {
+            // Ignore "duplicate column/table" errors but keep it quiet
+            if (!ex.Message.Contains("duplicate") && !ex.Message.Contains("already exists"))
+            {
+                // Verbose logging for actual schema errors
+                // Console.WriteLine($"[DATABASE] Patch Note: {patch} - {ex.Message}");
+            }
+        }
     }
 
     // Ensure no NULL values for CreatedAt (Safety for Feed sorting)
