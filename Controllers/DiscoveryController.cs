@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace FataleCore.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/Discovery")]
     [ApiController]
     public class DiscoveryController : ControllerBase
     {

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using FataleCore.Data; // Asegúrate de que el namespace coincida con tu proyecto
 using FataleCore.Models;
 namespace FataleCore.Controllers { 
-    [Route("api/[controller]")] 
+    [Route("api/Auth")] 
     [ApiController] 
     public class AuthController : ControllerBase { 
         private readonly ApplicationDbContext _context;
