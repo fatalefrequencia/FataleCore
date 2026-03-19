@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,16 +17,25 @@ Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("P
 
 // 1.1 DB Configuration
 var dbPath = builder.Configuration.GetConnectionString("Default");
+var railwayDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrWhiteSpace(railwayDbUrl))
+{
+    bool isPostgres = railwayDbUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) || 
+                      railwayDbUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+    if (isPostgres)
+    {
+        var uri = new Uri(railwayDbUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        dbPath = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]};SslMode=Require;Trust Server Certificate=true;";
+    }
+}
 if (string.IsNullOrWhiteSpace(dbPath))
 {
-    dbPath = Environment.GetEnvironmentVariable("DATABASE_PATH")
-             ?? (builder.Environment.IsProduction()
-                    ? "Data Source=/app/data/fatale_core.db"
-                    : "Data Source=fatale_core.db");
+    dbPath = "Host=localhost;Port=5432;Database=fatale_core;Username=postgres;Password=password;";
 }
 Console.WriteLine($"[STARTUP] Database Path: {dbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(dbPath));
+    options.UseNpgsql(dbPath));
 
 // 1.5 Service Registration
 builder.Services.AddScoped<FataleCore.Services.ISubscriptionService, FataleCore.Services.SubscriptionService>();
@@ -80,107 +90,31 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null; 
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; 
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ASEGURAR BASE DE DATOS
+app.UseDeveloperExceptionPage();
+
+app.Use(async (context, next) => 
+{
+    Console.WriteLine($"[REQUEST] {context.Request.Method} {context.Request.Path}");
+    await next.Invoke();
+});
+
+// DATABASE INIT
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    Console.WriteLine("[DATABASE] Initializing initialization strategy...");
-
-    // A. Manually create Transactions if EF missed it (Common point of failure)
-    try {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS Transactions (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                UserId INTEGER NOT NULL,
-                Type TEXT NOT NULL,
-                Amount INTEGER NOT NULL,
-                Description TEXT,
-                Timestamp TEXT NOT NULL,
-                RelatedUserId INTEGER,
-                TrackId INTEGER
-            );
-        ");
-        Console.WriteLine("[DATABASE] OK: 'Transactions' table verified.");
-    } catch { }
-
-    // B. Run standard migrations first
-    try {
+    Console.WriteLine("[DATABASE] Applying migrations...");
+    try 
+    {
         db.Database.Migrate();
-        Console.WriteLine("[DATABASE] OK: Standard migrations applied.");
-    } catch (Exception ex) {
-        Console.WriteLine("[DATABASE] MIGRATION_NOTICE (Skipping/Continuing): " + ex.Message);
-    }
-
-    // C. Post-Migration "Self-Healing" Patches (For tables that were already created but missing columns)
-    string[] schemaPatches = {
-        // Artists table fixes
-        "ALTER TABLE Artists ADD COLUMN FeaturedTrackId INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN IsLive INTEGER DEFAULT 0;",
-        "ALTER TABLE Artists ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
-        "ALTER TABLE Artists ADD COLUMN MapX INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN MapY INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN SectorId INTEGER;",
-        "ALTER TABLE Artists ADD COLUMN UserId INTEGER;",
+        Console.WriteLine("[DATABASE] OK: Migrations applied.");
         
-        // Users table fixes
-        "ALTER TABLE Users ADD COLUMN CommunityId INTEGER;",
-        "ALTER TABLE Users ADD COLUMN Biography TEXT DEFAULT '';",
-        "ALTER TABLE Users ADD COLUMN ProfilePictureUrl TEXT DEFAULT '';",
-        "ALTER TABLE Users ADD COLUMN BannerUrl TEXT;",
-        "ALTER TABLE Users ADD COLUMN ThemeColor TEXT DEFAULT '#ff006e';",
-        "ALTER TABLE Users ADD COLUMN TextColor TEXT DEFAULT '#ffffff';",
-        "ALTER TABLE Users ADD COLUMN BackgroundColor TEXT DEFAULT '#000000';",
-        "ALTER TABLE Users ADD COLUMN IsGlass INTEGER DEFAULT 0;",
-        "ALTER TABLE Users ADD COLUMN WallpaperVideoUrl TEXT;",
-        "ALTER TABLE Users ADD COLUMN CreditsBalance INTEGER DEFAULT 0;",
-
-        // Tracks table fixes
-        "ALTER TABLE Tracks ADD COLUMN Source TEXT;",
-        "ALTER TABLE Tracks ADD COLUMN IsPinned INTEGER DEFAULT 0;",
-        "ALTER TABLE Tracks ADD COLUMN IsPosted INTEGER DEFAULT 0;",
-        "ALTER TABLE Tracks ADD COLUMN CreatedAt TEXT;",
-
-        // Stations table fixes
-        "ALTER TABLE Stations ADD COLUMN Description TEXT;",
-        "ALTER TABLE Stations ADD COLUMN IsChatEnabled INTEGER DEFAULT 1;",
-        "ALTER TABLE Stations ADD COLUMN IsQueueEnabled INTEGER DEFAULT 1;",
-        "ALTER TABLE Stations ADD COLUMN ArtistId INTEGER DEFAULT 0;",
-        "ALTER TABLE Stations ADD COLUMN CurrentTrackId INTEGER;",
-        "ALTER TABLE Stations ADD COLUMN IsLive INTEGER DEFAULT 0;",
-
-        // Playlists table fixes
-        "ALTER TABLE Playlists ADD COLUMN IsPinned INTEGER DEFAULT 0;",
-        "ALTER TABLE Playlists ADD COLUMN IsPosted INTEGER DEFAULT 0;"
-    };
-
-    foreach (var patch in schemaPatches) {
-        try { 
-            db.Database.ExecuteSqlRaw(patch); 
-            Console.WriteLine($"[DATABASE] Patch Applied: {patch.Split(' ')[2]}");
-        } catch (Exception ex) {
-            // Ignore if column already exists
-            if (!ex.Message.Contains("duplicate") && !ex.Message.Contains("already exists"))
-            {
-                // Unhandled error might be useful?
-            }
-        }
-    }
-
-    // D. Data integrity fixes
-    try {
-        db.Database.ExecuteSqlRaw("UPDATE Tracks SET CreatedAt = CURRENT_TIMESTAMP WHERE CreatedAt IS NULL;");
-        db.Database.ExecuteSqlRaw("UPDATE Users SET Biography = '' WHERE Biography IS NULL;");
-        db.Database.ExecuteSqlRaw("UPDATE Users SET ProfilePictureUrl = '' WHERE ProfilePictureUrl IS NULL;");
-    } catch { }
-
-    // E. Ensure System Content
-    try {
         var systemArtist = db.Artists.FirstOrDefault(a => a.Name == "The Archive");
         if (systemArtist == null)
         {
@@ -189,9 +123,11 @@ using (var scope = app.Services.CreateScope())
             db.SaveChanges();
             Console.WriteLine("[DATABASE] OK: Created 'The Archive' artist.");
         }
-    } catch { }
-
-    Console.WriteLine("[DATABASE] Initialization sequence complete.");
+    } 
+    catch (Exception ex) 
+    {
+        Console.WriteLine("[DATABASE] ERROR during migration: " + ex.Message);
+    }
 }
 
 app.UseSwagger();
