@@ -77,18 +77,16 @@ namespace FataleCore.Controllers
                 user.Biography,
                 user.ProfilePictureUrl,
                 user.ResidentSectorId,
-                user.BannerUrl, // Added
-                user.ThemeColor, // Added
-                user.TextColor, // Added
-                user.BackgroundColor, // Added
-                user.IsGlass, // Added
-                user.WallpaperVideoUrl, // Added
+                user.BannerUrl,
+                user.ThemeColor,
+                user.TextColor,
+                user.BackgroundColor,
+                user.IsGlass,
+                user.WallpaperVideoUrl,
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId,
                 SectorId = artist?.SectorId,
-                CommunityId = user.CommunityId,
-                CommunityName = user.Community?.Name,
-                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
+                user.CommunityId
             });
         }
 
@@ -96,7 +94,6 @@ namespace FataleCore.Controllers
         public async Task<IActionResult> GetUser(int id)
         {
             var user = await _context.Users
-                .Include(u => u.Community)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
@@ -119,9 +116,7 @@ namespace FataleCore.Controllers
                 user.BackgroundColor,
                 user.IsGlass,
                 user.WallpaperVideoUrl,
-                CommunityId = user.CommunityId,
-                CommunityName = user.Community?.Name,
-                CommunityColor = user.Community != null ? GetSectorColor(user.Community.SectorId) : null
+                user.CommunityId
             });
         }
 
@@ -186,8 +181,7 @@ namespace FataleCore.Controllers
                     await dto.ProfilePicture.CopyToAsync(stream);
                 }
 
-                // Update URL (Frontend should serve static files from /uploads or via a controller)
-                // Assuming we serve static files or have an endpoint. Ideally we store relative path.
+                // Update URL
                 user.ProfilePictureUrl = $"/uploads/avatars/{fileName}";
             }
 
@@ -250,7 +244,7 @@ namespace FataleCore.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Re-fetch artist to get latest data (e.g. FeaturedTrackId)
+            // Re-fetch artist to get latest data
             artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == user.Id);
 
             return Ok(new { 
@@ -279,7 +273,6 @@ namespace FataleCore.Controllers
         [HttpGet("{id}/following")]
         public async Task<ActionResult<IEnumerable<User>>> GetFollowing(int id)
         {
-            // Get all artists this user is following via UserArtistLikes
             var following = await _context.UserArtistLikes
                 .Where(l => l.UserId == id)
                 .Include(l => l.Artist)
@@ -294,11 +287,9 @@ namespace FataleCore.Controllers
         [HttpGet("{id}/followers")]
         public async Task<ActionResult<IEnumerable<User>>> GetFollowers(int id)
         {
-            // Find this user's artist profile
             var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == id);
             if (artist == null) return Ok(new List<User>());
             
-            // Get all users who like this artist
             var followers = await _context.UserArtistLikes
                 .Where(l => l.ArtistId == artist.Id)
                 .Include(l => l.User)

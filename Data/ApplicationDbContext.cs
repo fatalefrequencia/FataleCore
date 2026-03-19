@@ -54,10 +54,7 @@ namespace FataleCore.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Community>()
-                .HasMany(c => c.Members)
-                .WithOne(u => u.Community)
-                .HasForeignKey(u => u.CommunityId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasMany(c => c.Members);
         }
     }
 }
