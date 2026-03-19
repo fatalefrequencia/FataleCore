@@ -38,10 +38,11 @@ builder.Services.AddHostedService<FataleCore.Services.Intelligence.MeditationWor
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
-        builder => builder
-            .AllowAnyOrigin()
-            .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Explicit methods
-            .AllowAnyHeader());
+        policy => policy
+            .SetIsOriginAllowed(_ => true) // Echoes the origin, works better with AllowCredentials
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()); // Required for SignalR
 });
 
 // 3. SignalR Registration
