@@ -1,6 +1,7 @@
+using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FataleCore.Models
 {
     public class User
     {
@@ -25,7 +26,7 @@ namespace FataleCore.Models
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
 
-        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("CommunityId")]
+        [JsonIgnore, ForeignKey("CommunityId")]
         public Community? Community { get; set; }
     }
 }

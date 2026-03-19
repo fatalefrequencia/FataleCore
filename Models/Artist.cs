@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+
 namespace FataleCore.Models
 {
     public class Artist
@@ -18,7 +21,7 @@ namespace FataleCore.Models
         public bool IsLive { get; set; } = false;
         public int? FeaturedTrackId { get; set; }
         
-        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("UserId")]
+        [JsonIgnore, ForeignKey("UserId")]
         public User? User { get; set; }
 
         [System.ComponentModel.DataAnnotations.Schema.ForeignKey("FeaturedTrackId")]

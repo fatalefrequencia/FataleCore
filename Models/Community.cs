@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace FataleCore.Models
 {
@@ -18,11 +19,12 @@ namespace FataleCore.Models
 
         public int FounderUserId { get; set; }
         
-        [ForeignKey("FounderUserId")]
+        [JsonIgnore, ForeignKey("FounderUserId")]
         public User Founder { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [JsonIgnore]
         public ICollection<User> Members { get; set; } = new List<User>();
     }
 }
