@@ -2,6 +2,7 @@ using FataleCore.Data;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FataleCore.DTOs;
 
 namespace FataleCore.Controllers
 {
@@ -19,29 +20,12 @@ namespace FataleCore.Controllers
         [HttpGet]
         public async Task<IActionResult> GetArtists()
         {
-            var artists = await _context.Artists
-                .Select(a => new
-                {
-                    a.Id,
-                    a.Name,
-                    a.Bio,
-                    a.ImageUrl,
-                    a.MapX,
-                    a.MapY,
-                    a.SectorId,
-                    a.CreditsBalance,
-                    a.UserId,
-                    a.IsLive,
-                    a.FeaturedTrackId,
-                    CommunityId = a.User != null ? a.User.CommunityId : null
-                })
-                .ToListAsync();
-
-            return Ok(artists);
+            var artists = await _context.Artists.ToListAsync();
+            return Ok(artists.Select(a => a.ToDto()));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Artist>> GetArtist(int id)
+        public async Task<ActionResult<ArtistDto>> GetArtist(int id)
         {
             var artist = await _context.Artists.FindAsync(id);
 
@@ -50,23 +34,23 @@ namespace FataleCore.Controllers
                 return NotFound();
             }
 
-            return artist;
+            return artist.ToDto();
         }
 
         [HttpPost]
-        public async Task<ActionResult<Artist>> PostArtist(Artist artist)
+        public async Task<ActionResult<ArtistDto>> PostArtist(Artist artist)
         {
             _context.Artists.Add(artist);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetArtist", new { id = artist.Id }, artist);
+            return CreatedAtAction("GetArtist", new { id = artist.Id }, artist.ToDto());
         }
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<Artist>> GetByUserId(int userId)
+        public async Task<ActionResult<ArtistDto>> GetByUserId(int userId)
         {
             var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
             if (artist == null) return NotFound();
-            return artist;
+            return artist.ToDto();
         }
 
         [HttpPost("like/{targetUserId}")]
@@ -134,7 +118,7 @@ namespace FataleCore.Controllers
             return Ok(new { liked = isLiked });
         }
         [HttpGet("liked")]
-        public async Task<ActionResult<IEnumerable<Artist>>> GetLikedArtists([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<ArtistDto>>> GetLikedArtists([FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
@@ -145,7 +129,7 @@ namespace FataleCore.Controllers
                 .Select(l => l.Artist!)
                 .ToListAsync();
 
-            return likedArtists;
+            return Ok(likedArtists.Select(a => a.ToDto()));
         }
     }
 }

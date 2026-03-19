@@ -1,6 +1,7 @@
 using FataleCore.Data;
 using FataleCore.Models;
 using FataleCore.Services.Intelligence;
+using FataleCore.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,7 +33,7 @@ namespace FataleCore.Controllers
         /// Returns the user's current taste vector as weighted nodes.
         /// </summary>
         [HttpGet("neuro-graph")]
-        public async Task<IActionResult> GetNeuroGraph([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<NeuroGraphDto>> GetNeuroGraph([FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("UserId is required.");
 
@@ -43,25 +44,29 @@ namespace FataleCore.Controllers
                 .ToListAsync();
 
             if (!history.Any())
-                return Ok(new { nodes = Array.Empty<object>() });
+                return Ok(new NeuroGraphDto { UserId = userId, Nodes = new List<NeuroNodeDto>(), TotalTracksAnalyzed = 0 });
 
             var userVector = _intelligenceService.BuildUserTasteVector(history);
 
             // Build nodes from vocabulary + weights
             var nodes = _vocabulary
-                .Select((tag, i) => new { tag, weight = userVector[i] })
-                .Where(n => n.weight > 0.01f) // Only meaningful nodes
-                .OrderByDescending(n => n.weight)
-                .Take(10)
-                .Select(n => new
-                {
-                    tag = n.tag,
-                    weight = Math.Round(n.weight, 3),
-                    category = GetCategory(n.tag)
+                .Select((tag, i) => new NeuroNodeDto 
+                { 
+                    Tag = tag, 
+                    Weight = Math.Round((double)userVector[i], 3),
+                    Category = GetCategory(tag)
                 })
+                .Where(n => n.Weight > 0.01) // Only meaningful nodes
+                .OrderByDescending(n => n.Weight)
+                .Take(10)
                 .ToList();
 
-            return Ok(new { userId, nodes, totalTracksAnalyzed = history.Count });
+            return Ok(new NeuroGraphDto 
+            { 
+                UserId = userId, 
+                Nodes = nodes, 
+                TotalTracksAnalyzed = history.Count 
+            });
         }
 
         /// <summary>
@@ -69,7 +74,7 @@ namespace FataleCore.Controllers
         /// Returns live human stations matching the given vibe tag.
         /// </summary>
         [HttpGet("resonant-stations")]
-        public async Task<IActionResult> GetResonantStations([FromQuery] string topTag, [FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<ResonantStationsResponseDto>> GetResonantStations([FromQuery] string topTag, [FromHeader(Name = "UserId")] int userId)
         {
             if (string.IsNullOrWhiteSpace(topTag)) return BadRequest("topTag is required.");
 
@@ -85,16 +90,16 @@ namespace FataleCore.Controllers
                 ))
                 .OrderByDescending(s => s.ListenerCount)
                 .Take(5)
-                .Select(s => new
+                .Select(s => new ResonantStationDto
                 {
-                    stationId = s.Id,
-                    name = s.Name,
-                    genre = s.Genre,
-                    frequency = s.Frequency,
-                    listenerCount = s.ListenerCount,
-                    sessionTitle = s.CurrentSessionTitle,
-                    djName = s.Artist != null ? s.Artist.Name : "Unknown DJ",
-                    artistId = s.ArtistId
+                    StationId = s.Id,
+                    Name = s.Name,
+                    Genre = s.Genre,
+                    Frequency = s.Frequency,
+                    ListenerCount = s.ListenerCount,
+                    SessionTitle = s.CurrentSessionTitle,
+                    DjName = s.Artist != null ? s.Artist.Name : "Unknown DJ",
+                    ArtistId = s.ArtistId
                 })
                 .ToListAsync();
 
@@ -106,25 +111,25 @@ namespace FataleCore.Controllers
                     .Where(s => s.IsLive)
                     .OrderByDescending(s => s.ListenerCount)
                     .Take(3)
-                    .Select(s => new
+                    .Select(s => new ResonantStationDto
                     {
-                        stationId = s.Id,
-                        name = s.Name,
-                        genre = s.Genre,
-                        frequency = s.Frequency,
-                        listenerCount = s.ListenerCount,
-                        sessionTitle = s.CurrentSessionTitle,
-                        djName = s.Artist != null ? s.Artist.Name : "Unknown DJ",
-                        artistId = s.ArtistId
+                        StationId = s.Id,
+                        Name = s.Name,
+                        Genre = s.Genre,
+                        Frequency = s.Frequency,
+                        ListenerCount = s.ListenerCount,
+                        SessionTitle = s.CurrentSessionTitle,
+                        DjName = s.Artist != null ? s.Artist.Name : "Unknown DJ",
+                        ArtistId = s.ArtistId
                     })
                     .ToListAsync();
             }
 
-            return Ok(new
+            return Ok(new ResonantStationsResponseDto
             {
-                topTag,
-                matchCount = liveStations.Count,
-                stations = liveStations
+                TopTag = topTag,
+                MatchCount = liveStations.Count,
+                Stations = liveStations
             });
         }
 

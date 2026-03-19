@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using FataleCore.Data;
 using FataleCore.Models;
 using FataleCore.Hubs;
+using FataleCore.DTOs;
 
 namespace FataleCore.Controllers
 {
@@ -22,36 +23,39 @@ namespace FataleCore.Controllers
 
         // GET: api/Stations
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetStations()
+        public async Task<ActionResult<IEnumerable<StationDto>>> GetStations()
         {
             try 
             {
                 var stations = await _context.Stations
                     .Include(s => s.Artist)
                     .Include(s => s.CurrentTrack)
-                        .ThenInclude(t => t.Album)
-                            .ThenInclude(a => a.Artist)
+                        .ThenInclude(t => t!.Album)
+                            .ThenInclude(a => a!.Artist)
                     .OrderByDescending(s => s.IsLive)
                     .ThenByDescending(s => s.ListenerCount)
-                    .Select(s => new {
-                        s.Id,
-                        s.Name,
-                        s.Genre,
-                        s.Frequency,
-                        s.IsLive,
-                        s.CurrentSessionTitle,
-                        s.ListenerCount,
-                        ArtistName = s.Artist != null ? s.Artist.Name : "UNKNOWN",
-                        ArtistUserId = s.Artist != null ? s.Artist.UserId : null,
-                        CurrentTrack = s.CurrentTrack != null ? new {
-                            s.CurrentTrack.Id,
-                            s.CurrentTrack.Title,
-                            Artist = s.CurrentTrack.Album != null ? s.CurrentTrack.Album.Artist : null
-                        } : null
-                    })
                     .ToListAsync();
 
-                return Ok(stations);
+                var dtos = stations.Select(s => new StationDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Genre = s.Genre,
+                    Frequency = s.Frequency,
+                    IsLive = s.IsLive,
+                    CurrentSessionTitle = s.CurrentSessionTitle,
+                    ListenerCount = s.ListenerCount,
+                    ArtistName = s.Artist?.Name ?? "UNKNOWN",
+                    ArtistUserId = s.Artist?.UserId,
+                    CurrentTrack = s.CurrentTrack != null ? new StationTrackDto 
+                    {
+                        Id = s.CurrentTrack.Id,
+                        Title = s.CurrentTrack.Title,
+                        Artist = s.CurrentTrack.Album?.Artist?.ToDto()
+                    } : null
+                });
+
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -61,7 +65,7 @@ namespace FataleCore.Controllers
 
         // GET: api/Stations/favorites
         [HttpGet("favorites")]
-        public async Task<ActionResult<IEnumerable<object>>> GetFavorites([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<StationDto>>> GetFavorites([FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized();
 
@@ -71,53 +75,60 @@ namespace FataleCore.Controllers
                     .ThenInclude(s => s!.Artist)
                 .Include(f => f.Station)
                     .ThenInclude(s => s!.CurrentTrack)
-                .Select(f => new {
-                    f.Station!.Id,
-                    f.Station.Name,
-                    f.Station.Genre,
-                    f.Station.Frequency,
-                    f.Station.IsLive,
-                    f.Station.CurrentSessionTitle,
-                    f.Station.ListenerCount,
-                    ArtistName = f.Station.Artist != null ? f.Station.Artist.Name : "UNKNOWN",
-                    ArtistUserId = f.Station.Artist != null ? f.Station.Artist.UserId : null,
-                    CurrentTrack = f.Station.CurrentTrack != null ? new {
-                        f.Station.CurrentTrack.Id,
-                        f.Station.CurrentTrack.Title,
-                        Artist = f.Station.CurrentTrack.Album != null ? f.Station.CurrentTrack.Album.Artist : null
-                    } : null
-                })
+                        .ThenInclude(t => t!.Album)
+                            .ThenInclude(a => a!.Artist)
                 .ToListAsync();
 
-            return Ok(favorites);
+            var dtos = favorites.Select(f => new StationDto
+            {
+                Id = f.Station!.Id,
+                Name = f.Station.Name,
+                Genre = f.Station.Genre,
+                Frequency = f.Station.Frequency,
+                IsLive = f.Station.IsLive,
+                CurrentSessionTitle = f.Station.CurrentSessionTitle,
+                ListenerCount = f.Station.ListenerCount,
+                ArtistName = f.Station.Artist?.Name ?? "UNKNOWN",
+                ArtistUserId = f.Station.Artist?.UserId,
+                CurrentTrack = f.Station.CurrentTrack != null ? new StationTrackDto 
+                {
+                    Id = f.Station.CurrentTrack.Id,
+                    Title = f.Station.CurrentTrack.Title,
+                    Artist = f.Station.CurrentTrack.Album?.Artist?.ToDto()
+                } : null
+            });
+
+            return Ok(dtos);
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<object>> GetStationByUser(int userId)
+        public async Task<ActionResult<StationDto>> GetStationByUser(int userId)
         {
             var station = await _context.Stations
                 .Include(s => s.Artist)
                 .Include(s => s.CurrentTrack)
-                    .ThenInclude(t => t.Album)
-                        .ThenInclude(a => a.Artist)
+                    .ThenInclude(t => t!.Album)
+                        .ThenInclude(a => a!.Artist)
                 .FirstOrDefaultAsync(s => s.Artist != null && s.Artist.UserId == userId);
 
             if (station == null) return NotFound();
 
-            return Ok(new {
-                station.Id,
-                station.Name,
-                station.Genre,
-                station.Frequency,
-                station.IsLive,
-                station.CurrentSessionTitle,
-                station.ListenerCount,
-                ArtistName = station.Artist != null ? station.Artist.Name : "UNKNOWN",
-                ArtistUserId = station.Artist != null ? station.Artist.UserId : null,
-                CurrentTrack = station.CurrentTrack != null ? new {
-                    station.CurrentTrack.Id,
-                    station.CurrentTrack.Title,
-                    Artist = station.CurrentTrack.Album != null ? station.CurrentTrack.Album.Artist : null
+            return Ok(new StationDto
+            {
+                Id = station.Id,
+                Name = station.Name,
+                Genre = station.Genre,
+                Frequency = station.Frequency,
+                IsLive = station.IsLive,
+                CurrentSessionTitle = station.CurrentSessionTitle,
+                ListenerCount = station.ListenerCount,
+                ArtistName = station.Artist?.Name ?? "UNKNOWN",
+                ArtistUserId = station.Artist?.UserId,
+                CurrentTrack = station.CurrentTrack != null ? new StationTrackDto 
+                {
+                    Id = station.CurrentTrack.Id,
+                    Title = station.CurrentTrack.Title,
+                    Artist = station.CurrentTrack.Album?.Artist?.ToDto()
                 } : null
             });
         }

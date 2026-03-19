@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FataleCore.Dtos
+namespace FataleCore.DTOs
 {
     public class TrackUploadDto
     {

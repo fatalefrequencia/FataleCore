@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FataleCore.Data;
 using FataleCore.Models;
+using FataleCore.DTOs;
 using System.Security.Claims;
 
 namespace FataleCore.Controllers
@@ -19,7 +20,7 @@ namespace FataleCore.Controllers
 
         // GET: api/Messages/conversations
         [HttpGet("conversations")]
-        public async Task<ActionResult<IEnumerable<object>>> GetConversations([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<ConversationDto>>> GetConversations([FromHeader(Name = "UserId")] int userId)
         {
             // Get all messages where the user is either sender or receiver
             var messages = await _context.Messages
@@ -39,11 +40,11 @@ namespace FataleCore.Controllers
                 .ToList();
 
             // Fetch user details for each conversation partner
-            var result = new List<object>();
+            var result = new List<ConversationDto>();
             foreach (var conv in conversations)
             {
                 var otherUser = await _context.Users.FindAsync(conv.OtherUserId);
-                result.Add(new
+                result.Add(new ConversationDto
                 {
                     UserId = conv.OtherUserId,
                     Username = otherUser?.Username ?? "Unknown",
@@ -54,12 +55,12 @@ namespace FataleCore.Controllers
                 });
             }
 
-            return result;
+            return Ok(result);
         }
 
         // GET: api/Messages/conversation/{otherUserId}
         [HttpGet("conversation/{otherUserId}")]
-        public async Task<ActionResult<IEnumerable<Message>>> GetConversation(int otherUserId, [FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<MessageDto>>> GetConversation(int otherUserId, [FromHeader(Name = "UserId")] int userId)
         {
             var history = await _context.Messages
                 .Where(m => (m.SenderId == userId && m.ReceiverId == otherUserId) ||
@@ -75,12 +76,20 @@ namespace FataleCore.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return history;
+            return Ok(history.Select(m => new MessageDto 
+            {
+                Id = m.Id,
+                SenderId = m.SenderId,
+                ReceiverId = m.ReceiverId,
+                Content = m.Content,
+                Timestamp = m.Timestamp,
+                IsRead = m.IsRead
+            }));
         }
 
         // POST: api/Messages/send
         [HttpPost("send")]
-        public async Task<ActionResult<Message>> SendMessage([FromBody] MessageDto dto, [FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<MessageDto>> SendMessage([FromBody] MessageDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             var message = new Message
             {
@@ -94,13 +103,15 @@ namespace FataleCore.Controllers
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
 
-            return Ok(message);
+            return Ok(new MessageDto 
+            {
+                Id = message.Id,
+                SenderId = message.SenderId,
+                ReceiverId = message.ReceiverId,
+                Content = message.Content,
+                Timestamp = message.Timestamp,
+                IsRead = message.IsRead
+            });
         }
-    }
-
-    public class MessageDto
-    {
-        public int ReceiverId { get; set; }
-        public string Content { get; set; } = string.Empty;
     }
 }

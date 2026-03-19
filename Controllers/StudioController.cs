@@ -1,5 +1,5 @@
 using FataleCore.Data;
-using FataleCore.Dtos;
+using FataleCore.DTOs;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

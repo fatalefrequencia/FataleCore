@@ -18,20 +18,48 @@ Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("P
 // 1.1 DB Configuration
 var dbPath = builder.Configuration.GetConnectionString("Default");
 var railwayDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
 if (!string.IsNullOrWhiteSpace(railwayDbUrl))
 {
-    bool isPostgres = railwayDbUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) || 
-                      railwayDbUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
-    if (isPostgres)
+    try 
     {
-        var uri = new Uri(railwayDbUrl);
-        var userInfo = uri.UserInfo.Split(':');
-        dbPath = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]};SslMode=Require;Trust Server Certificate=true;";
+        if (railwayDbUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) || 
+            railwayDbUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            var uri = new Uri(railwayDbUrl);
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 5432;
+            var database = uri.AbsolutePath.Trim('/');
+            var user = "";
+            var password = "";
+
+            if (!string.IsNullOrEmpty(uri.UserInfo))
+            {
+                var parts = uri.UserInfo.Split(':');
+                user = parts[0];
+                if (parts.Length > 1) password = parts[1];
+            }
+
+            dbPath = $"Host={host};Port={port};Database={database};Username={user};Password={password};SslMode=Require;Trust Server Certificate=true;Maximum Pool Size=50;";
+            Console.WriteLine($"[STARTUP] Parsed DATABASE_URL: Host={host}, Port={port}, Database={database}, User={user}");
+        }
+        else 
+        {
+            // If it's already a connection string format
+            dbPath = railwayDbUrl;
+            Console.WriteLine("[STARTUP] Using DATABASE_URL as raw connection string.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[STARTUP] ERROR parsing DATABASE_URL: {ex.Message}");
     }
 }
+
 if (string.IsNullOrWhiteSpace(dbPath))
 {
     dbPath = "Host=localhost;Port=5432;Database=fatale_core;Username=postgres;Password=password;";
+    Console.WriteLine("[STARTUP] Falling back to default localhost connection string.");
 }
 Console.WriteLine($"[STARTUP] Database Path: {dbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

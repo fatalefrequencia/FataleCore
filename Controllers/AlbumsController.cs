@@ -1,5 +1,5 @@
 using FataleCore.Data;
-using FataleCore.Dtos;
+using FataleCore.DTOs;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,13 +20,14 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Album>>> GetAlbums()
+        public async Task<ActionResult<IEnumerable<AlbumDto>>> GetAlbums()
         {
-            return await _context.Albums.Include(a => a.Artist).ToListAsync();
+            var albums = await _context.Albums.Include(a => a.Artist).ToListAsync();
+            return Ok(albums.Select(a => a.ToDto()));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Album>> GetAlbum(int id)
+        public async Task<ActionResult<AlbumDto>> GetAlbum(int id)
         {
             var album = await _context.Albums.Include(a => a.Artist).FirstOrDefaultAsync(a => a.Id == id);
 
@@ -35,16 +36,16 @@ namespace FataleCore.Controllers
                 return NotFound();
             }
 
-            return album;
+            return Ok(album.ToDto());
         }
 
         [HttpPost]
-        public async Task<ActionResult<Album>> PostAlbum(Album album)
+        public async Task<ActionResult<AlbumDto>> PostAlbum(Album album)
         {
             _context.Albums.Add(album);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAlbum", new { id = album.Id }, album);
+            return CreatedAtAction("GetAlbum", new { id = album.Id }, album.ToDto());
         }
 
         /// <summary>
@@ -177,11 +178,9 @@ namespace FataleCore.Controllers
 
                 return CreatedAtAction("GetAlbum", new { id = album.Id }, new
                 {
-                    album.Id,
-                    album.Title,
-                    album.CoverImageUrl,
+                    album = album.ToDto(),
                     TrackCount = createdTracks.Count,
-                    Tracks = createdTracks.Select(t => new { t.Id, t.Title, t.IsLocked, t.Price })
+                    Tracks = createdTracks.Select(t => t.ToDto())
                 });
             }
             catch (Exception ex)

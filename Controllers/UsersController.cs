@@ -2,6 +2,7 @@ using FataleCore.Data;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FataleCore.DTOs;
 using System;
 using System.IO;
 
@@ -20,9 +21,10 @@ namespace FataleCore.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            var users = await _context.Users.ToListAsync();
+            return users.Select(u => u.ToDto()).ToList();
         }
 
         private static string GetSectorColor(int sectorId) => sectorId switch
@@ -37,11 +39,12 @@ namespace FataleCore.Controllers
 
         // GET: api/Users/search?query=...
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<User>>> SearchUsers([FromQuery] string? query)
+        public async Task<ActionResult<IEnumerable<UserDto>>> SearchUsers([FromQuery] string? query)
         {
             if (string.IsNullOrWhiteSpace(query)) 
             {
-                return await _context.Users.Take(10).ToListAsync();
+                var usersDefault = await _context.Users.Take(10).ToListAsync();
+                return usersDefault.Select(u => u.ToDto()).ToList();
             }
             
             var results = await _context.Users
@@ -49,7 +52,7 @@ namespace FataleCore.Controllers
                 .Take(20)
                 .ToListAsync();
                 
-            return Ok(results);
+            return Ok(results.Select(r => r.ToDto()));
         }
 
         [HttpGet("profile")]
@@ -59,35 +62,15 @@ namespace FataleCore.Controllers
             {
                  // Dev fallback: try first user
                  var firstUser = await _context.Users.FirstOrDefaultAsync();
-                 if (firstUser != null) return Ok(firstUser);
+                 if (firstUser != null) return Ok(firstUser.ToDto());
                  return Unauthorized("Invalid User ID");
             }
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound("User not found");
 
-            // Fetch artist metadata if available
             var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
-            
-            return Ok(new { 
-                user.Id,
-                user.Username,
-                user.Email,
-                user.CreditsBalance,
-                user.Biography,
-                user.ProfilePictureUrl,
-                user.ResidentSectorId,
-                user.BannerUrl,
-                user.ThemeColor,
-                user.TextColor,
-                user.BackgroundColor,
-                user.IsGlass,
-                user.WallpaperVideoUrl,
-                IsLive = artist?.IsLive ?? false,
-                FeaturedTrackId = artist?.FeaturedTrackId,
-                SectorId = artist?.SectorId,
-                user.CommunityId
-            });
+            return Ok(user.ToDto(artist));
         }
 
         [HttpGet("{id}")]
@@ -101,27 +84,11 @@ namespace FataleCore.Controllers
                 return NotFound();
             }
 
-            return Ok(new
-            {
-                user.Id,
-                user.Username,
-                user.Email,
-                user.CreditsBalance,
-                user.Biography,
-                user.ProfilePictureUrl,
-                user.ResidentSectorId,
-                user.BannerUrl,
-                user.ThemeColor,
-                user.TextColor,
-                user.BackgroundColor,
-                user.IsGlass,
-                user.WallpaperVideoUrl,
-                user.CommunityId
-            });
+            return Ok(user.ToDto());
         }
 
         [HttpPut("update-profile")]
-        public async Task<IActionResult> UpdateProfile([FromForm] FataleCore.Dtos.UpdateProfileDto dto, [FromHeader(Name = "UserId")] int userId)
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
@@ -249,29 +216,13 @@ namespace FataleCore.Controllers
 
             return Ok(new { 
                 message = "Profile updated successfully",
-                user.Id,
-                user.Username,
-                user.Email,
-                user.CreditsBalance,
-                user.Biography,
-                user.ProfilePictureUrl,
-                user.ResidentSectorId,
-                user.BannerUrl,
-                user.ThemeColor,
-                user.TextColor,
-                user.BackgroundColor,
-                user.IsGlass,
-                user.WallpaperVideoUrl,
-                IsLive = artist?.IsLive ?? false,
-                FeaturedTrackId = artist?.FeaturedTrackId,
-                SectorId = artist?.SectorId,
-                user.CommunityId
+                user = user.ToDto(artist)
             });
         }
 
         // GET: api/User/{id}/following
         [HttpGet("{id}/following")]
-        public async Task<ActionResult<IEnumerable<User>>> GetFollowing(int id)
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetFollowing(int id)
         {
             var following = await _context.UserArtistLikes
                 .Where(l => l.UserId == id)
@@ -280,15 +231,15 @@ namespace FataleCore.Controllers
                 .Select(l => l.Artist!.User!)
                 .ToListAsync();
             
-            return Ok(following);
+            return Ok(following.Select(u => u.ToDto()));
         }
 
         // GET: api/User/{id}/followers
         [HttpGet("{id}/followers")]
-        public async Task<ActionResult<IEnumerable<User>>> GetFollowers(int id)
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetFollowers(int id)
         {
             var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == id);
-            if (artist == null) return Ok(new List<User>());
+            if (artist == null) return Ok(new List<UserDto>());
             
             var followers = await _context.UserArtistLikes
                 .Where(l => l.ArtistId == artist.Id)
@@ -297,7 +248,7 @@ namespace FataleCore.Controllers
                 .Select(l => l.User!)
                 .ToListAsync();
             
-            return Ok(followers);
+            return Ok(followers.Select(u => u.ToDto()));
         }
     }
 }

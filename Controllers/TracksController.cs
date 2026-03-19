@@ -2,6 +2,7 @@ using FataleCore.Data;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FataleCore.DTOs;
 
 namespace FataleCore.Controllers
 {
@@ -19,7 +20,7 @@ namespace FataleCore.Controllers
         }
 
         [HttpPost("upload-full")]
-        public async Task<IActionResult> UploadTrack([FromForm] FataleCore.Dtos.TrackUploadDto dto, [FromHeader(Name = "UserId")] int userId)
+        public async Task<IActionResult> UploadTrack([FromForm] TrackUploadDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             try
             {
@@ -108,7 +109,7 @@ namespace FataleCore.Controllers
 
                 Console.WriteLine($"[TRACK_UPLOAD] SUCCESS: Track {track.Id} saved and linked to Artist {artist.Id} (User {artist.UserId})");
 
-                return CreatedAtAction(nameof(GetTrack), new { id = track.Id }, track);
+                return CreatedAtAction(nameof(GetTrack), new { id = track.Id }, track.ToDto());
             }
             catch (Exception ex)
             {
@@ -118,7 +119,7 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Track>>> GetTracks([FromQuery] string sort = "newest")
+        public async Task<ActionResult<IEnumerable<TrackDto>>> GetTracks([FromQuery] string sort = "newest")
         {
             var query = _context.Tracks
                 .Where(t => !t.IsDelisted)
@@ -128,7 +129,6 @@ namespace FataleCore.Controllers
 
             if (sort == "trending")
             {
-                // Trending is currently PlayCount weighted by age (if we had age, but let's use PlayCount desc)
                 query = query.OrderByDescending(t => t.PlayCount);
             }
             else
@@ -136,11 +136,12 @@ namespace FataleCore.Controllers
                 query = query.OrderByDescending(t => t.CreatedAt);
             }
 
-            return await query.ToListAsync();
+            var tracks = await query.ToListAsync();
+            return tracks.Select(t => t.ToDto()).ToList();
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Track>> GetTrack(int id)
+        public async Task<ActionResult<TrackDto>> GetTrack(int id)
         {
             var track = await _context.Tracks.Include(t => t.Album).ThenInclude(a => a!.Artist).FirstOrDefaultAsync(t => t.Id == id);
 
@@ -149,7 +150,7 @@ namespace FataleCore.Controllers
                 return NotFound();
             }
 
-            return track;
+            return track.ToDto();
         }
 
         [HttpGet("{id}/stream")]
@@ -172,12 +173,12 @@ namespace FataleCore.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Track>> PostTrack(Track track)
+        public async Task<ActionResult<TrackDto>> PostTrack(Track track)
         {
             _context.Tracks.Add(track);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTrack", new { id = track.Id }, track);
+            return CreatedAtAction("GetTrack", new { id = track.Id }, track.ToDto());
         }
 
         // DELETE: api/Tracks/{id}

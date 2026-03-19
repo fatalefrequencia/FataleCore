@@ -1,4 +1,4 @@
-namespace FataleCore.Dtos
+namespace FataleCore.DTOs
 {
     public class LikeDto
     {

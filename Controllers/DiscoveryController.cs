@@ -2,8 +2,10 @@ using FataleCore.Data;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FataleCore.DTOs;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace FataleCore.Controllers
 {
@@ -47,25 +49,26 @@ namespace FataleCore.Controllers
 
         // GET: api/discovery/stats
         [HttpGet("stats")]
-        public async Task<IActionResult> GetGlobalStats()
+        public async Task<ActionResult<DiscoveryStatsDto>> GetGlobalStats()
         {
-            var totalPlays = await _context.Tracks.SumAsync(t => t.PlayCount);
+            var totalPlays = await _context.Tracks.SumAsync(t => (long)t.PlayCount);
             var topTracks = await _context.Tracks
                 .OrderByDescending(t => t.PlayCount)
                 .Take(5)
-                .Select(t => new { t.Id, t.Title, t.PlayCount })
+                .Select(t => new TopTrackDto { Id = t.Id, Title = t.Title, PlayCount = t.PlayCount })
                 .ToListAsync();
 
             var totalLikes = await _context.UserLikes.CountAsync();
+            var onlineCount = await GetOnlineUserCount();
 
-            return Ok(new
+            return Ok(new DiscoveryStatsDto
             {
-                totalScans = totalPlays + totalLikes, // Lore-friendly metric
-                totalPlays,
-                topTracks,
-                activeUsers = await GetOnlineUserCount(), // Now strictly "Online/Active"
-                totalUsers = await _context.Users.CountAsync(),
-                onlineUsers = await GetOnlineUserCount()
+                TotalScans = totalPlays + totalLikes,
+                TotalPlays = (int)Math.Min(totalPlays, int.MaxValue),
+                TopTracks = topTracks,
+                ActiveUsers = onlineCount,
+                TotalUsers = await _context.Users.CountAsync(),
+                OnlineUsers = onlineCount
             });
         }
 

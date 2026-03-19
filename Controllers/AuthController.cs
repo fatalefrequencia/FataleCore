@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using FataleCore.Data; // Asegúrate de que el namespace coincida con tu proyecto
 using FataleCore.Models;
+using FataleCore.DTOs;
 namespace FataleCore.Controllers { 
     [Route("api/Auth")] 
     [ApiController] 
@@ -62,23 +63,15 @@ namespace FataleCore.Controllers {
                 { 
                     message = "Identity Synchronized!", 
                     token = "fake-jwt-token-for-dev",
-                    userId = newUser.Id,
-                    username = newUser.Username,
-                    email = newUser.Email,
-                    createdAt = newUser.CreatedAt,
-                    // Personalization Defaults
-                    themeColor = newUser.ThemeColor,
-                    textColor = newUser.TextColor,
-                    backgroundColor = newUser.BackgroundColor,
-                    isGlass = newUser.IsGlass,
-                    bannerUrl = newUser.BannerUrl,
-                    creditsBalance = newUser.CreditsBalance,
-                    communityId = newUser.CommunityId
+                    user = newUser.ToDto()
                 });
             }
             catch (Exception ex)
             {
-                // Si falla, dime EXACTAMENTE por qué
+                if (ex.Message.Contains("connection") || ex.Message.Contains("failure") || ex.InnerException?.Message?.Contains("known") == true)
+                {
+                    return StatusCode(500, new { error = "Database connection failure.", details = ex.Message, inner = ex.InnerException?.Message });
+                }
                 return BadRequest(new { error = ex.Message, inner = ex.InnerException?.Message });
             }
         }
@@ -112,24 +105,15 @@ namespace FataleCore.Controllers {
                 return Ok(new 
                 { 
                     token = "fake-jwt-token-for-dev", 
-                    userId = user.Id,
-                    username = user.Username,
-                    email = user.Email,
-                    createdAt = user.CreatedAt,
-                    // Personalization
-                    themeColor = user.ThemeColor,
-                    textColor = user.TextColor,
-                    backgroundColor = user.BackgroundColor,
-                    isGlass = user.IsGlass,
-                    bannerUrl = user.BannerUrl,
-                    profilePictureUrl = user.ProfilePictureUrl,
-                    biography = user.Biography,
-                    creditsBalance = user.CreditsBalance,
-                    communityId = user.CommunityId
+                    user = user.ToDto()
                 });
             }
             catch (Exception ex)
             {
+                if (ex.Message.Contains("connection") || ex.Message.Contains("failure") || ex.InnerException?.Message?.Contains("known") == true)
+                {
+                    return StatusCode(500, new { error = "Database connection failure.", details = ex.Message, inner = ex.InnerException?.Message });
+                }
                 return StatusCode(500, new { message = $"Internal Server Error: {ex.Message}", details = ex.InnerException?.Message });
             }
         }

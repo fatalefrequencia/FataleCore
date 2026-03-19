@@ -1,5 +1,5 @@
 using FataleCore.Data;
-using FataleCore.Dtos;
+using FataleCore.DTOs;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,14 +22,14 @@ namespace FataleCore.Controllers
 
         // GET: api/Playlists/user/{userId}
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<IEnumerable<Playlist>>> GetUserPlaylists(int userId)
+        public async Task<ActionResult<IEnumerable<PlaylistDto>>> GetUserPlaylists(int userId)
         {
             var playlists = await _context.Playlists
                 .Where(p => p.UserId == userId)
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();
 
-            return Ok(playlists);
+            return Ok(playlists.Select(p => p.ToDto()));
         }
 
         // GET: api/Playlists/{id}
@@ -42,22 +42,21 @@ namespace FataleCore.Controllers
             var tracks = await _context.PlaylistTracks
                 .Where(pt => pt.PlaylistId == id)
                 .Include(pt => pt.Track)
+                    .ThenInclude(t => t!.Album)
+                        .ThenInclude(a => a!.Artist)
                 .Select(pt => pt.Track)
                 .ToListAsync();
 
-            // Enrich tracks with artist info if needed (simplified here)
-            // Ideally we should include Artist/User relations
-
             return Ok(new
             {
-                Playlist = playlist,
-                Tracks = tracks
+                Playlist = playlist.ToDto(),
+                Tracks = tracks.Select(t => t.ToDto())
             });
         }
 
         // POST: api/Playlists
         [HttpPost]
-        public async Task<ActionResult<Playlist>> CreatePlaylist([FromBody] CreatePlaylistDto dto, [FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<PlaylistDto>> CreatePlaylist([FromBody] CreatePlaylistDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
@@ -73,7 +72,7 @@ namespace FataleCore.Controllers
             _context.Playlists.Add(playlist);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetPlaylist), new { id = playlist.Id }, playlist);
+            return CreatedAtAction(nameof(GetPlaylist), new { id = playlist.Id }, playlist.ToDto());
         }
 
         // PUT: api/Playlists/{id}
@@ -89,7 +88,7 @@ namespace FataleCore.Controllers
             playlist.IsPublic = dto.IsPublic;
 
             await _context.SaveChangesAsync();
-            return Ok(playlist);
+            return Ok(playlist.ToDto());
         }
 
         // POST: api/Playlists/{id}/tracks

@@ -2,6 +2,7 @@ using FataleCore.Data;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FataleCore.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,7 +82,7 @@ namespace FataleCore.Controllers
                 var tracks = await tracksQuery
                     .OrderByDescending(t => t.CreatedAt)
                     .Take(25)
-                    .Select(t => new FeedItem { 
+                    .Select(t => new FeedItemDto { 
                         Id = "track-" + t.Id,
                         ItemId = t.Id,
                         Type = "track",
@@ -111,7 +112,7 @@ namespace FataleCore.Controllers
                                         from a in artists.DefaultIfEmpty()
                                         where currentUserId.HasValue ? followedUserIds.Contains(s.UserId) : false
                                         orderby s.CreatedAt descending
-                                        select new FeedItem {
+                                        select new FeedItemDto {
                                             Id = "studio-" + s.Id,
                                             ItemId = s.Id,
                                             Type = "studio",
@@ -139,7 +140,7 @@ namespace FataleCore.Controllers
                                          from a in artists.DefaultIfEmpty()
                                          where currentUserId.HasValue ? followedUserIds.Contains(j.UserId) : (j.UserId == 3)
                                          orderby j.CreatedAt descending
-                                         select new FeedItem {
+                                         select new FeedItemDto {
                                              Id = "journal-" + j.Id,
                                              ItemId = j.Id,
                                              Type = "journal",
@@ -168,10 +169,10 @@ namespace FataleCore.Controllers
                     .Take(50)
                     .ToListAsync();
 
-                var repostItems = new List<FeedItem>();
+                var repostItems = new List<FeedItemDto>();
                 foreach (var rep in repostInteractions)
                 {
-                    FeedItem? item = null;
+                    FeedItemDto? item = null;
                     var type = rep.ItemType?.ToLower() ?? "";
                     if (type == "track")
                     {
@@ -180,7 +181,7 @@ namespace FataleCore.Controllers
                             .FirstOrDefaultAsync(track => track.Id == rep.ItemId);
                         if (t != null)
                         {
-                            item = new FeedItem
+                            item = new FeedItemDto
                             {
                                 Id = $"repost-track-{rep.Id}",
                                 ItemId = t.Id,
@@ -207,7 +208,7 @@ namespace FataleCore.Controllers
                         var s = await _context.StudioContents.Include(sc => sc.User).FirstOrDefaultAsync(sc => sc.Id == rep.ItemId);
                         if (s != null)
                         {
-                            item = new FeedItem
+                            item = new FeedItemDto
                             {
                                 Id = $"repost-studio-{rep.Id}",
                                 ItemId = s.Id,
@@ -232,7 +233,7 @@ namespace FataleCore.Controllers
                         var j = await _context.JournalEntries.Include(je => je.User).FirstOrDefaultAsync(je => je.Id == rep.ItemId);
                         if (j != null)
                         {
-                            item = new FeedItem
+                            item = new FeedItemDto
                             {
                                 Id = $"repost-journal-{rep.Id}",
                                 ItemId = j.Id,
@@ -264,8 +265,8 @@ namespace FataleCore.Controllers
                     }
                 }
 
-                var shoutouts = new List<FeedItem> {
-                    new FeedItem {
+                var shoutouts = new List<FeedItemDto> {
+                    new FeedItemDto {
                         Id = "sys-1",
                         Type = "system",
                         Title = "NODE_SYNC_COMPLETE",
@@ -273,7 +274,7 @@ namespace FataleCore.Controllers
                         Artist = "FATALE_CORE",
                         CreatedAt = DateTime.UtcNow.AddMinutes(-45)
                     },
-                    new FeedItem {
+                    new FeedItemDto {
                         Id = "sys-2",
                         Type = "system",
                         Title = "SIGNAL_BURST",
@@ -294,37 +295,6 @@ namespace FataleCore.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex.Message} | Stack: {ex.StackTrace}");
             }
-        }
-
-        public class FeedItem
-        {
-            public string Id { get; set; } = string.Empty;
-            public int ItemId { get; set; }
-            public string Type { get; set; } = string.Empty; // track, studio, journal, system
-            public string Title { get; set; } = string.Empty;
-            public string Content { get; set; } = string.Empty;
-            public string Artist { get; set; } = string.Empty;
-            public int? ArtistId { get; set; }
-            public int? ArtistUserId { get; set; }
-            public int? SectorId { get; set; }
-            public int? CommunityId { get; set; }
-            public string? ImageUrl { get; set; }
-            public string? Source { get; set; }
-            public DateTime CreatedAt { get; set; }
-            public int PlayCount { get; set; }
-            public string? MediaType { get; set; } // PHOTO, VIDEO
-            public int? TrackId { get; set; }
-
-            // Social Metadata
-            public int LikeCount { get; set; }
-            public int CommentCount { get; set; }
-            public int RepostCount { get; set; }
-            public bool IsLiked { get; set; }
-            public bool IsReposted { get; set; }
-
-            // Re-sync Propagation
-            public string? RepostedBy { get; set; }
-            public bool IsOriginalSignal { get; set; } = true;
         }
     }
 }

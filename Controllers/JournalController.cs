@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FataleCore.Data;
 using FataleCore.Models;
+using FataleCore.DTOs;
 
 namespace FataleCore.Controllers
 {
@@ -17,7 +18,7 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<JournalEntry>>> GetMyJournal([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<JournalEntryDto>>> GetMyJournal([FromHeader(Name = "UserId")] int userId)
         {
             Console.WriteLine($"[JOURNAL] GetMyJournal for UserId: {userId}");
             if (userId <= 0) return Unauthorized("Invalid User ID");
@@ -28,23 +29,43 @@ namespace FataleCore.Controllers
                 .ToListAsync();
             
             Console.WriteLine($"[JOURNAL] Found {results.Count} entries for UserId: {userId}");
-            return results;
+            return Ok(results.Select(j => new JournalEntryDto 
+            {
+                Id = j.Id,
+                UserId = j.UserId,
+                Title = j.Title,
+                Content = j.Content,
+                IsPosted = j.IsPosted,
+                IsPinned = j.IsPinned,
+                CreatedAt = j.CreatedAt
+            }));
         }
 
         // GET: api/Journal/user/{targetUserId}
         [HttpGet("user/{targetUserId}")]
-        public async Task<ActionResult<IEnumerable<JournalEntry>>> GetUserJournal(int targetUserId)
+        public async Task<ActionResult<IEnumerable<JournalEntryDto>>> GetUserJournal(int targetUserId)
         {
             // Return all entries (previously restricted to posted only)
-            return await _context.JournalEntries
+            var results = await _context.JournalEntries
                 .Where(j => j.UserId == targetUserId)
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
+
+            return Ok(results.Select(j => new JournalEntryDto 
+            {
+                Id = j.Id,
+                UserId = j.UserId,
+                Title = j.Title,
+                Content = j.Content,
+                IsPosted = j.IsPosted,
+                IsPinned = j.IsPinned,
+                CreatedAt = j.CreatedAt
+            }));
         }
 
         // POST: api/Journal
         [HttpPost]
-        public async Task<ActionResult<JournalEntry>> CreateEntry([FromBody] JournalEntryDto dto, [FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<JournalEntryDto>> CreateEntry([FromBody] JournalEntryDto dto, [FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
@@ -61,7 +82,16 @@ namespace FataleCore.Controllers
             _context.JournalEntries.Add(entry);
             await _context.SaveChangesAsync();
 
-            return Ok(entry);
+            return Ok(new JournalEntryDto 
+            {
+                Id = entry.Id,
+                UserId = entry.UserId,
+                Title = entry.Title,
+                Content = entry.Content,
+                IsPosted = entry.IsPosted,
+                IsPinned = entry.IsPinned,
+                CreatedAt = entry.CreatedAt
+            });
         }
 
         // PUT: api/Journal/{id}
@@ -143,13 +173,5 @@ namespace FataleCore.Controllers
 
             return Ok();
         }
-    }
-
-    public class JournalEntryDto
-    {
-        public string Title { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
-        public bool IsPosted { get; set; } = false;
-        public bool IsPinned { get; set; } = false;
     }
 }

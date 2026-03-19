@@ -1,5 +1,5 @@
 using FataleCore.Data;
-using FataleCore.Dtos;
+using FataleCore.DTOs;
 using FataleCore.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -91,7 +91,7 @@ namespace FataleCore.Controllers
         // GET: api/likes
         // Get all liked tracks for the user (Unified Library)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Track>>> GetLikedTracks([FromHeader(Name = "UserId")] int userId)
+        public async Task<ActionResult<IEnumerable<TrackDto>>> GetLikedTracks([FromHeader(Name = "UserId")] int userId)
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
@@ -99,14 +99,14 @@ namespace FataleCore.Controllers
             var likedTracks = await _context.UserLikes
                 .Where(l => l.UserId == userId)
                 .Include(l => l.Track)
-                .ThenInclude(t => t!.Album)
-                .ThenInclude(a => a!.Artist)
+                    .ThenInclude(t => t!.Album)
+                        .ThenInclude(a => a!.Artist)
                 .Where(l => l.Track != null) // Ensure no orphaned likes
-                .Select(l => l.Track)
+                .Select(l => l.Track!)
                 .Distinct() // Prevent UI duplication
                 .ToListAsync();
 
-            return Ok(likedTracks);
+            return Ok(likedTracks.Select(t => t.ToDto()));
         }
 
         // POST: api/likes/cleanup

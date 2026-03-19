@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace FataleCore.Dtos
+namespace FataleCore.DTOs
 {
     public class UpdateProfileDto
     {
