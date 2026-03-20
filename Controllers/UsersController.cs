@@ -56,11 +56,11 @@ namespace FataleCore.Controllers
         }
 
         [HttpGet("profile")]
-        public async Task<IActionResult> GetProfile([FromHeader(Name = "UserId")] int userId)
+        public async Task<IActionResult> GetProfile([FromHeader(Name = "UserId")] int? userId)
         {
-            if (userId <= 0) 
+            if (userId == null || userId <= 0) 
             {
-                 return Unauthorized("Invalid User ID");
+                 return Unauthorized(new { message = "IDENTITY_SYNC_FAIL: UserId header missing or invalid in request.", receivedId = userId });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -81,7 +81,8 @@ namespace FataleCore.Controllers
                 return NotFound();
             }
 
-            return Ok(user.ToDto());
+            var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == id);
+            return Ok(user.ToDto(artist));
         }
 
         [HttpPut("update-profile")]
@@ -147,6 +148,12 @@ namespace FataleCore.Controllers
 
                 // Update URL
                 user.ProfilePictureUrl = $"/uploads/avatars/{fileName}";
+                
+                // CRITICAL: Also update artist profile image to keep Discovery in sync
+                if (artist != null) 
+                {
+                    artist.ImageUrl = user.ProfilePictureUrl;
+                }
             }
 
             // Banner Upload
