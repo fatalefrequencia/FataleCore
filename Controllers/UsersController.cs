@@ -60,9 +60,6 @@ namespace FataleCore.Controllers
         {
             if (userId <= 0) 
             {
-                 // Dev fallback: try first user
-                 var firstUser = await _context.Users.FirstOrDefaultAsync();
-                 if (firstUser != null) return Ok(firstUser.ToDto());
                  return Unauthorized("Invalid User ID");
             }
 
