@@ -166,20 +166,27 @@ app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 
-var appBase = app.Environment.IsProduction() ? "/app" : Directory.GetCurrentDirectory();
+// In production (Railway), use the persistent volume at /data
+// Locally, use the current directory
+var appBase = builder.Environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+Console.WriteLine($"[STARTUP] Using appBase: {appBase}");
+Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}");
 
 var uploadsPath = Path.Combine(appBase, "uploads");
 if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+Console.WriteLine($"[STARTUP] Serving /uploads from: {uploadsPath}");
 app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath), RequestPath = "/uploads" });
 
 var cachePath = Path.Combine(appBase, "Cache");
 if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
+Console.WriteLine($"[STARTUP] Serving /cache from: {cachePath}");
 app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(cachePath), RequestPath = "/cache" });
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED");
+app.MapGet("/api/version", () => "VERSION_2026_03_26_01_20_C");
 app.MapGet("/api/ping", () => "PONG_VERSION_2");
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");

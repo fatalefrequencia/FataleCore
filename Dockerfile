@@ -13,7 +13,11 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Create directories for persistent data, uploads, and cache
-RUN mkdir -p /app/data /app/uploads /app/Cache
+RUN mkdir -p /app/data /app/uploads/avatars /app/uploads/banners /app/Cache
+
+# Copy critical media subfolders (keep deployment size small)
+COPY uploads/avatars ./uploads/avatars
+COPY uploads/banners ./uploads/banners
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 
