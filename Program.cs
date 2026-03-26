@@ -213,6 +213,17 @@ app.MapPost("/api/migrate-media", async (HttpRequest request) =>
     return Results.Ok($"Successfully extracted media to {destPath}");
 });
 
+// Temporary endpoint to clean up old broken IMG_ posts for mel00test
+app.MapGet("/api/cleanup-mel00", async (ApplicationDbContext db) => {
+    var userIds = await db.Users.Where(u => u.Username.Contains("mel00")).Select(u => u.Id).ToListAsync();
+    var badPosts = await db.StudioContents
+        .Where(s => userIds.Contains(s.UserId) && (s.Title.Contains("IMG_") || s.Title.Contains("blob") || s.Url.Contains("blob")))
+        .ToListAsync();
+    db.StudioContents.RemoveRange(badPosts);
+    await db.SaveChangesAsync();
+    return Results.Ok(new { message = $"Deleted {badPosts.Count} broken posts for mel00", deleted = badPosts.Select(b => b.Title) });
+});
+
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
 
