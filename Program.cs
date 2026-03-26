@@ -186,8 +186,33 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED");
-app.MapGet("/api/version", () => "VERSION_2026_03_26_01_20_C");
+app.MapGet("/api/version", () => "VERSION_2026_03_26_01_30_MIGRATION");
 app.MapGet("/api/ping", () => "PONG_VERSION_2");
+
+// Temporary endpoint to migrate 116MB of legacy media
+app.MapPost("/api/migrate-media", async (HttpRequest request) =>
+{
+    var secret = request.Headers["X-Migration-Secret"].ToString();
+    if (secret != "fatale-rescue-2026") return Results.Unauthorized();
+
+    var appBase = app.Environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+    var destPath = Path.Combine(appBase, "uploads");
+
+    if (!request.HasFormContentType) return Results.BadRequest("Expected form content");
+    var form = await request.ReadFormAsync();
+    var file = form.Files.FirstOrDefault();
+    if (file == null) return Results.BadRequest("No file provided");
+
+    var tempZip = Path.GetTempFileName();
+    using (var stream = new FileStream(tempZip, FileMode.Create))
+        await file.CopyToAsync(stream);
+
+    System.IO.Compression.ZipFile.ExtractToDirectory(tempZip, appBase, overwriteFiles: true);
+    File.Delete(tempZip);
+
+    return Results.Ok($"Successfully extracted media to {destPath}");
+});
+
 app.MapControllers();
 app.MapHub<RadioHub>("/hubs/radio");
 
