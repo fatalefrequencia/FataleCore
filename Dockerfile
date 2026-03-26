@@ -25,4 +25,4 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 # read $PORT at container-start time and pass it to ASP.NET Core via ASPNETCORE_URLS.
 EXPOSE 8080
 
-ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080} dotnet FataleCore.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "mkdir -p /data/uploads && cp -rn /app/uploads/* /data/uploads/ 2>/dev/null || true && ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080} dotnet FataleCore.dll"]
