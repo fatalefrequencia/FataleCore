@@ -6,7 +6,9 @@ using FataleCore.Services;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Linq;
 using System.IO;
+using Microsoft.AspNetCore.Hosting;
 
 namespace FataleCore.Controllers
 {
@@ -17,12 +19,15 @@ namespace FataleCore.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISubscriptionService _subscriptionService;
         private readonly string _cacheDirectory;
+        private readonly IWebHostEnvironment _env;
 
-        public YoutubeCacheController(ApplicationDbContext context, ISubscriptionService subscriptionService)
+        public YoutubeCacheController(ApplicationDbContext context, ISubscriptionService subscriptionService, IWebHostEnvironment env)
         {
             _context = context;
             _subscriptionService = subscriptionService;
-            _cacheDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Cache");
+            _env = env;
+            var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+            _cacheDirectory = Path.Combine(appBase, "Cache");
             if (!Directory.Exists(_cacheDirectory))
             {
                 Directory.CreateDirectory(_cacheDirectory);

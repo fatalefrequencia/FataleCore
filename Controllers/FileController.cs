@@ -20,7 +20,8 @@ namespace FataleCore.Controllers
                 return BadRequest("File is empty.");
 
             // Create uploads folder if it doesn't exist
-            var uploadsText = Path.Combine(_environment.ContentRootPath, "uploads");
+            var appBase = _environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+            var uploadsText = Path.Combine(appBase, "uploads");
             if (!Directory.Exists(uploadsText))
             {
                 Directory.CreateDirectory(uploadsText);

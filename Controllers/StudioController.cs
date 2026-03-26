@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
+using Microsoft.AspNetCore.Hosting;
 
 namespace FataleCore.Controllers
 {
@@ -14,10 +15,12 @@ namespace FataleCore.Controllers
     public class StudioController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public StudioController(ApplicationDbContext context)
+        public StudioController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         [HttpGet]
@@ -53,7 +56,8 @@ namespace FataleCore.Controllers
             try
             {
                 var folder = dto.Type.ToUpper() == "VIDEO" ? "videos" : "photos";
-                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "studio", folder);
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var uploadsPath = Path.Combine(appBase, "uploads", "studio", folder);
                 if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
                 var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.File.FileName)}";

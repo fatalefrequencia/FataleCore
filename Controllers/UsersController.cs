@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using FataleCore.DTOs;
 using System;
 using System.IO;
+using Microsoft.AspNetCore.Hosting;
 
 namespace FataleCore.Controllers
 {
@@ -13,10 +14,12 @@ namespace FataleCore.Controllers
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         // GET: api/Users
@@ -133,7 +136,8 @@ namespace FataleCore.Controllers
             if (dto.ProfilePicture != null && dto.ProfilePicture.Length > 0)
             {
                 // Ensure directory exists
-                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "avatars");
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var uploadPath = Path.Combine(appBase, "uploads", "avatars");
                 if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
 
                 // Generate unique filename
@@ -159,7 +163,8 @@ namespace FataleCore.Controllers
             // Banner Upload
             if (dto.Banner != null && dto.Banner.Length > 0)
             {
-                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "banners");
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var uploadsPath = Path.Combine(appBase, "uploads", "banners");
                 if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
 
                 var fileName = $"{user.Id}_banner_{DateTime.UtcNow.Ticks}{Path.GetExtension(dto.Banner.FileName)}";
@@ -176,7 +181,8 @@ namespace FataleCore.Controllers
             // Wallpaper Video Upload
             if (dto.WallpaperVideo != null && dto.WallpaperVideo.Length > 0)
             {
-                var wallpaperPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "wallpapers");
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var wallpaperPath = Path.Combine(appBase, "uploads", "wallpapers");
                 if (!Directory.Exists(wallpaperPath)) Directory.CreateDirectory(wallpaperPath);
 
                 var wallpaperFileName = $"{user.Id}_wallpaper_{DateTime.UtcNow.Ticks}{Path.GetExtension(dto.WallpaperVideo.FileName)}";
