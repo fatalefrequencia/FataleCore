@@ -69,6 +69,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(dbPath));
 
 // 1.5 Service Registration
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<FataleCore.Services.ISubscriptionService, FataleCore.Services.SubscriptionService>();
 builder.Services.AddScoped<FataleCore.Services.Intelligence.IIntelligenceService, FataleCore.Services.Intelligence.IntelligenceService>();
 builder.Services.AddHostedService<FataleCore.Services.Intelligence.MeditationWorkerService>();
