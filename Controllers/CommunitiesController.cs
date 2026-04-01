@@ -33,7 +33,8 @@ namespace FataleCore.Controllers
                     createdAt = c.CreatedAt,
                     founderName = c.Founder != null ? c.Founder.Username : "System",
                     founderId = c.FounderUserId,
-                    memberCount = _context.Users.Count(u => u.CommunityId == c.Id)
+                    memberCount = _context.Users.Count(u => u.CommunityId == c.Id),
+                    imageUrl = c.ImageUrl
                 })
                 .ToListAsync();
 
@@ -45,6 +46,11 @@ namespace FataleCore.Controllers
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
             public int SectorId { get; set; }
+        }
+
+        public class UpdateImageDto
+        {
+            public string ImageUrl { get; set; } = string.Empty;
         }
 
         // POST: api/communities
@@ -138,6 +144,20 @@ namespace FataleCore.Controllers
                 .ToListAsync();
 
             return Ok(members);
+        }
+        // POST: api/communities/{id}/image
+        [HttpPost("{id}/image")]
+        public async Task<IActionResult> UpdateCommunityImage(int id, [FromBody] UpdateImageDto dto, [FromHeader(Name = "UserId")] int userId)
+        {
+            var community = await _context.Communities.FindAsync(id);
+            if (community == null) return NotFound(new { message = "Community not found" });
+
+            if (community.FounderUserId != userId)
+                return Forbid("Only the founder can update the community image.");
+
+            community.ImageUrl = dto.ImageUrl;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Image updated", imageUrl = community.ImageUrl });
         }
     }
 }

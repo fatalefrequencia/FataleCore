@@ -173,6 +173,9 @@ namespace FataleCore.Migrations
                     b.Property<int>("FounderUserId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)

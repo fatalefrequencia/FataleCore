@@ -21,6 +21,7 @@ namespace FataleCore.Models
         [ForeignKey("FounderUserId")]
         public User Founder { get; set; } = null!;
 
+        public string? ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<User> Members { get; set; } = new List<User>();
