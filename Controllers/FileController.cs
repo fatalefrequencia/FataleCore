@@ -45,7 +45,7 @@ namespace FataleCore.Controllers
             // Let's use ContentRoot/uploads and we will configure StaticFiles to serve it.
             
             var relativePath = $"/uploads/{fileName}";
-            return Ok(new { Path = relativePath });
+            return Ok(new { path = relativePath });
         }
     }
 }
