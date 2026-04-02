@@ -179,6 +179,41 @@ namespace FataleCore.Controllers
             return Ok(new { reposted, repostCount = count });
         }
 
+        // DELETE: api/socialaction/comment/{id}
+        [HttpDelete("comment/{id}")]
+        public async Task<IActionResult> DeleteComment(int id, [FromHeader(Name = "UserId")] int userId)
+        {
+            if (userId <= 0) return Unauthorized("Invalid User ID");
+
+            var comment = await _context.FeedInteractions.FindAsync(id);
+            if (comment == null) return NotFound();
+
+            if (comment.InteractionType != "COMMENT") return BadRequest("Not a comment signal");
+
+            // Authorization: Author only
+            if (comment.UserId != userId)
+            {
+                return Unauthorized("Unauthorized access to signal disposal");
+            }
+
+            _context.FeedInteractions.Remove(comment);
+            
+            // Delete direct replies to maintain data integrity
+            var replies = await _context.FeedInteractions
+                .Where(i => i.ParentId == id && i.InteractionType == "COMMENT")
+                .ToListAsync();
+            _context.FeedInteractions.RemoveRange(replies);
+
+            await _context.SaveChangesAsync();
+
+            var count = await _context.FeedInteractions
+                .CountAsync(i => i.ItemType == comment.ItemType && 
+                                 i.ItemId == comment.ItemId && 
+                                 i.InteractionType == "COMMENT");
+
+            return Ok(new { success = true, commentCount = count });
+        }
+
         public class InteractionRequest
         {
             public string ItemType { get; set; } = string.Empty;
