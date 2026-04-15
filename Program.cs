@@ -61,12 +61,12 @@ if (!string.IsNullOrWhiteSpace(railwayDbUrl))
 
 if (string.IsNullOrWhiteSpace(dbPath))
 {
-    dbPath = "Host=localhost;Port=5432;Database=fatale_core;Username=postgres;Password=password;";
-    Console.WriteLine("[STARTUP] Falling back to default localhost connection string.");
+    dbPath = "Data Source=fatale_core.db";
+    Console.WriteLine("[STARTUP] Falling back to default SQLite connection string.");
 }
 Console.WriteLine($"[STARTUP] Database Path: {dbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(dbPath));
+    options.UseSqlite(dbPath));
 
 // 1.5 Service Registration
 builder.Services.AddMemoryCache();
