@@ -124,6 +124,7 @@ namespace FataleCore.Controllers
                                             CommunityId = s.User != null ? s.User.CommunityId : null,
                                             SectorId = a != null ? a.SectorId : null,
                                             ImageUrl = s.Url,
+                                            MediaType = s.Type,
                                             CreatedAt = s.CreatedAt,
                                             LikeCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "LIKE"),
                                             CommentCount = _context.FeedInteractions.Count(i => i.ItemType == "studio" && i.ItemId == s.Id && i.InteractionType == "COMMENT"),
