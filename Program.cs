@@ -201,7 +201,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED_DB_SYNC");
-app.MapGet("/api/version", () => "VERSION_2026_04_16_POSTGRES_SYNC_V1");
+app.MapGet("/api/version", () => "VERSION_2026_04_17_DTO_FIX_V1");
 app.MapGet("/api/ping", () => "PONG_VERSION_2_PATCHED");
 app.MapGet("/api/debug-db", async (ApplicationDbContext db) => {
     var count = await db.Communities.CountAsync();
