@@ -12,6 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = null; // Unlimited for media migration
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = int.MaxValue; // Unlimited
+    options.MemoryBufferThreshold = int.MaxValue;
+});
+
 // 1. Logging & Config
 Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}");
 Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("PORT") ?? "N/A"}");
