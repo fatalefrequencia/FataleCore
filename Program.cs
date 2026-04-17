@@ -16,7 +16,11 @@ var builder = WebApplication.CreateBuilder(args);
 Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}");
 Console.WriteLine($"[STARTUP] PORT (env): {Environment.GetEnvironmentVariable("PORT") ?? "N/A"}");
 
-// 1.1 DB Configuration
+// 1.1 App Base & Path Configuration
+var appBase = builder.Environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+Console.WriteLine($"[STARTUP] Using appBase: {appBase}");
+
+// 1.2 DB Configuration
 var dbPath = builder.Configuration.GetConnectionString("Default");
 var railwayDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
@@ -61,12 +65,24 @@ if (!string.IsNullOrWhiteSpace(railwayDbUrl))
 
 if (string.IsNullOrWhiteSpace(dbPath))
 {
-    dbPath = "Data Source=fatale_core.db";
-    Console.WriteLine("[STARTUP] Falling back to default SQLite connection string.");
+    var sqliteFile = Path.Combine(appBase, "fatale_core.db");
+    dbPath = $"Data Source={sqliteFile}";
+    Console.WriteLine($"[STARTUP] Using SQLite fallback at: {sqliteFile}");
 }
-Console.WriteLine($"[STARTUP] Database Path: {dbPath}");
+Console.WriteLine($"[STARTUP] Database Connection established using path/connection string.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(dbPath));
+{
+    if (dbPath.Contains("Host=") || dbPath.Contains("Server="))
+    {
+        Console.WriteLine("[STARTUP] CONFIGURED: PostgreSQL Provider [Npgsql]");
+        options.UseNpgsql(dbPath);
+    }
+    else
+    {
+        Console.WriteLine("[STARTUP] CONFIGURED: SQLite Provider [Sqlite]");
+        options.UseSqlite(dbPath);
+    }
+});
 
 // 1.5 Service Registration
 builder.Services.AddMemoryCache();
@@ -167,10 +183,8 @@ app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 
-// In production (Railway), use the persistent volume at /data
-// Locally, use the current directory
-var appBase = builder.Environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
-Console.WriteLine($"[STARTUP] Using appBase: {appBase}");
+// In production (Railway), use the persistent volume at /data (already set in appBase)
+Console.WriteLine($"[STARTUP] Final Path Mapping OK.");
 Console.WriteLine($"[STARTUP] Environment: {builder.Environment.EnvironmentName}");
 
 var uploadsPath = Path.Combine(appBase, "uploads");
@@ -186,9 +200,9 @@ app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensio
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED");
-app.MapGet("/api/version", () => "VERSION_2026_03_26_01_30_MIGRATION");
-app.MapGet("/api/ping", () => "PONG_VERSION_2");
+app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED_DB_SYNC");
+app.MapGet("/api/version", () => "VERSION_2026_04_16_POSTGRES_SYNC_V1");
+app.MapGet("/api/ping", () => "PONG_VERSION_2_PATCHED");
 app.MapGet("/api/debug-db", async (ApplicationDbContext db) => {
     var count = await db.Communities.CountAsync();
     var provider = db.Database.ProviderName;

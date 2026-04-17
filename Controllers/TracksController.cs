@@ -33,7 +33,8 @@ namespace FataleCore.Controllers
                     return BadRequest("Cover image is empty.");
 
                 // 2. Prepare Uploads Directory
-                var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads");
+                var appBase = _environment.IsProduction() ? "/data" : _environment.ContentRootPath;
+                var uploadsPath = Path.Combine(appBase, "uploads");
                 if (!Directory.Exists(uploadsPath))
                     Directory.CreateDirectory(uploadsPath);
 
@@ -159,14 +160,14 @@ namespace FataleCore.Controllers
             var track = await _context.Tracks.FindAsync(id);
             if (track == null) return NotFound();
 
-            var filePath = Path.Combine(_environment.ContentRootPath, track.FilePath.TrimStart('/').Replace("/", "\\"));
+            var appBase = _environment.IsProduction() ? "/data" : _environment.ContentRootPath;
+            var filePath = Path.Combine(appBase, track.FilePath.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString()));
             
-            // Handle if file path is stored as relative or absolute, normalize it
             if (!System.IO.File.Exists(filePath))
             {
                  // Fallback: try removing "uploads" prefix if it's double
-                 filePath = Path.Combine(_environment.ContentRootPath, "uploads", Path.GetFileName(track.FilePath));
-                 if (!System.IO.File.Exists(filePath)) return NotFound("File not found on server");
+                 filePath = Path.Combine(appBase, "uploads", Path.GetFileName(track.FilePath));
+                 if (!System.IO.File.Exists(filePath)) return NotFound($"File not found on server at {filePath}");
             }
 
             return PhysicalFile(filePath, "audio/mpeg", enableRangeProcessing: true);

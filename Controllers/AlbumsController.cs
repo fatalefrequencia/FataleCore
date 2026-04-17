@@ -75,7 +75,8 @@ namespace FataleCore.Controllers
                 }
 
                 // Prepare uploads directory
-                var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads");
+                var appBase = _environment.IsProduction() ? "/data" : _environment.ContentRootPath;
+                var uploadsPath = Path.Combine(appBase, "uploads");
                 if (!Directory.Exists(uploadsPath))
                     Directory.CreateDirectory(uploadsPath);
 
