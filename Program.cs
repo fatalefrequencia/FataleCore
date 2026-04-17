@@ -204,9 +204,13 @@ app.MapGet("/", () => "FATALE_CORE_ONLINE_V2_PATCHED_DB_SYNC");
 app.MapGet("/api/version", () => "VERSION_2026_04_17_DTO_FIX_V1");
 app.MapGet("/api/ping", () => "PONG_VERSION_2_PATCHED");
 app.MapGet("/api/debug-db", async (ApplicationDbContext db) => {
-    var count = await db.Communities.CountAsync();
-    var provider = db.Database.ProviderName;
-    return Results.Ok(new { communityCount = count, databaseProvider = provider, timestamp = DateTime.UtcNow });
+    return new {
+        communityCount = await db.Communities.CountAsync(),
+        trackCount = await db.Tracks.CountAsync(),
+        userCount = await db.Users.CountAsync(),
+        databaseProvider = db.Database.ProviderName,
+        timestamp = DateTime.UtcNow
+    };
 });
 
 // Temporary endpoint to migrate 116MB of legacy media
