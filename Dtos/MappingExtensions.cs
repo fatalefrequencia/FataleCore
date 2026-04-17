@@ -87,6 +87,7 @@ namespace FataleCore.DTOs
                 AlbumId = track.AlbumId,
                 AlbumTitle = track.Album?.Title,
                 ArtistName = track.Album?.Artist?.Name,
+                ArtistUserId = track.Album?.Artist?.UserId,
                 PlayCount = track.PlayCount
             };
         }
