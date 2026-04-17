@@ -17,6 +17,7 @@ namespace FataleCore.DTOs
         public DateTime CreatedAt { get; set; }
         public int PlayCount { get; set; }
         public string? MediaType { get; set; } // PHOTO, VIDEO
+        public string? ThumbnailUrl { get; set; }
         public int? TrackId { get; set; }
 
         // Social Metadata

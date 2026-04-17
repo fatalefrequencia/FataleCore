@@ -78,6 +78,22 @@ namespace FataleCore.Controllers
                     IsPosted = dto.IsPosted
                 };
 
+                if (dto.ThumbnailFile != null && dto.ThumbnailFile.Length > 0)
+                {
+                    var thumbFolder = "thumbnails";
+                    var thumbUploadsPath = Path.Combine(appBase, "uploads", "studio", thumbFolder);
+                    if (!Directory.Exists(thumbUploadsPath)) Directory.CreateDirectory(thumbUploadsPath);
+
+                    var thumbFileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ThumbnailFile.FileName)}";
+                    var thumbFilePath = Path.Combine(thumbUploadsPath, thumbFileName);
+
+                    using (var stream = new FileStream(thumbFilePath, FileMode.Create))
+                    {
+                        await dto.ThumbnailFile.CopyToAsync(stream);
+                    }
+                    content.ThumbnailUrl = $"/uploads/studio/{thumbFolder}/{thumbFileName}";
+                }
+
                 _context.StudioContents.Add(content);
                 await _context.SaveChangesAsync();
 
@@ -132,6 +148,42 @@ namespace FataleCore.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Content deleted successfully" });
+        }
+
+        [HttpPost("update-thumbnail/{id}")]
+        public async Task<IActionResult> UpdateThumbnail(int id, [FromForm] IFormFile file, [FromHeader(Name = "UserId")] int userId)
+        {
+            if (userId <= 0) return Unauthorized("Invalid User ID");
+            if (file == null || file.Length == 0) return BadRequest("File is required");
+
+            var content = await _context.StudioContents.FindAsync(id);
+            if (content == null) return NotFound();
+            if (content.UserId != userId) return Forbid();
+
+            try
+            {
+                var thumbFolder = "thumbnails";
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var uploadsPath = Path.Combine(appBase, "uploads", "studio", thumbFolder);
+                if (!Directory.Exists(uploadsPath)) Directory.CreateDirectory(uploadsPath);
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                var filePath = Path.Combine(uploadsPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                content.ThumbnailUrl = $"/uploads/studio/{thumbFolder}/{fileName}";
+                await _context.SaveChangesAsync();
+
+                return Ok(new { thumbnailUrl = content.ThumbnailUrl });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

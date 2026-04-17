@@ -10,6 +10,7 @@ namespace FataleCore.Models
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string Url { get; set; } = string.Empty;
+        public string? ThumbnailUrl { get; set; }
         public string Type { get; set; } = "PHOTO"; // PHOTO or VIDEO
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsPosted { get; set; } = false;

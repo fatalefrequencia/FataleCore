@@ -8,6 +8,7 @@ namespace FataleCore.DTOs
         public string? Description { get; set; }
         public string Type { get; set; } = "PHOTO"; // PHOTO or VIDEO
         public IFormFile File { get; set; } = null!;
+        public IFormFile? ThumbnailFile { get; set; }
         public bool IsPosted { get; set; } = true;
     }
 }
