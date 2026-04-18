@@ -20,6 +20,7 @@ namespace FataleCore.DTOs
         public bool MonitorIsGlass { get; set; }
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
+        public string? StatusMessage { get; set; }
         
         // Artist Metadata (optional)
         public bool IsLive { get; set; }
