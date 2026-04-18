@@ -219,6 +219,35 @@ namespace FataleCore.Controllers
                 user.IsGlass = dto.IsGlass.Value;
             }
 
+            // Monitor Background Image Upload
+            if (dto.MonitorImage != null && dto.MonitorImage.Length > 0)
+            {
+                var appBase = _env.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+                var monitorPath = Path.Combine(appBase, "uploads", "monitors");
+                if (!Directory.Exists(monitorPath)) Directory.CreateDirectory(monitorPath);
+
+                var fileName = $"{user.Id}_monitor_{DateTime.UtcNow.Ticks}{Path.GetExtension(dto.MonitorImage.FileName)}";
+                var filePath = Path.Combine(monitorPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.MonitorImage.CopyToAsync(stream);
+                }
+
+                user.MonitorImageUrl = $"/uploads/monitors/{fileName}";
+            }
+
+            // Monitor Styles
+            if (!string.IsNullOrEmpty(dto.MonitorBackgroundColor))
+            {
+                user.MonitorBackgroundColor = dto.MonitorBackgroundColor;
+            }
+
+            if (dto.MonitorIsGlass.HasValue)
+            {
+                user.MonitorIsGlass = dto.MonitorIsGlass.Value;
+            }
+
             await _context.SaveChangesAsync();
 
             // Re-fetch artist to get latest data

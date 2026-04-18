@@ -16,5 +16,8 @@ namespace FataleCore.DTOs
         public bool? IsGlass { get; set; }
         public bool? IsLive { get; set; }
         public int? FeaturedTrackId { get; set; }
+        public IFormFile? MonitorImage { get; set; }
+        public string? MonitorBackgroundColor { get; set; }
+        public bool? MonitorIsGlass { get; set; }
     }
 }

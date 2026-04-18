@@ -15,6 +15,9 @@ namespace FataleCore.DTOs
         public string? BackgroundColor { get; set; }
         public bool IsGlass { get; set; }
         public string? WallpaperVideoUrl { get; set; }
+        public string? MonitorImageUrl { get; set; }
+        public string? MonitorBackgroundColor { get; set; }
+        public bool MonitorIsGlass { get; set; }
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
         
