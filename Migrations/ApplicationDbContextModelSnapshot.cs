@@ -824,6 +824,9 @@ namespace FataleCore.Migrations
                     b.Property<int?>("ResidentSectorId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("text");
+
                     b.Property<string>("TextColor")
                         .HasColumnType("text");
 
