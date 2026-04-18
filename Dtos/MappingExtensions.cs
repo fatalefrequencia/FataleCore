@@ -27,6 +27,7 @@ namespace FataleCore.DTOs
                 MonitorIsGlass = user.MonitorIsGlass,
                 ResidentSectorId = user.ResidentSectorId,
                 CommunityId = user.CommunityId,
+                StatusMessage = user.StatusMessage,
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId
             };
