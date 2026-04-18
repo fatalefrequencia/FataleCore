@@ -100,6 +100,7 @@ namespace FataleCore.Controllers
             // Update text fields if provided
             if (!string.IsNullOrEmpty(dto.Username)) user.Username = dto.Username;
             if (dto.Biography != null) user.Biography = dto.Biography;
+            if (dto.StatusMessage != null) user.StatusMessage = dto.StatusMessage;
             if (dto.ResidentSectorId.HasValue) user.ResidentSectorId = dto.ResidentSectorId.Value;
             
             // Handle Artist-specific fields
