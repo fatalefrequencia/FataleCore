@@ -19,5 +19,6 @@ namespace FataleCore.DTOs
         public IFormFile? MonitorImage { get; set; }
         public string? MonitorBackgroundColor { get; set; }
         public bool? MonitorIsGlass { get; set; }
+        public bool? ClearMonitorImage { get; set; }
     }
 }

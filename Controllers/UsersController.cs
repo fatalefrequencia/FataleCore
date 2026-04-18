@@ -236,16 +236,26 @@ namespace FataleCore.Controllers
 
                 user.MonitorImageUrl = $"/uploads/monitors/{fileName}";
             }
-
-            // Monitor Styles
-            if (!string.IsNullOrEmpty(dto.MonitorBackgroundColor))
+            else if (dto.ClearMonitorImage == true || Request.Form["ClearMonitorImage"] == "true")
             {
-                user.MonitorBackgroundColor = dto.MonitorBackgroundColor;
+                user.MonitorImageUrl = null;
             }
 
+            // Monitor Styles
+            var monitorBgColor = dto.MonitorBackgroundColor ?? Request.Form["MonitorBackgroundColor"].ToString();
+            if (!string.IsNullOrEmpty(monitorBgColor))
+            {
+                user.MonitorBackgroundColor = monitorBgColor;
+            }
+
+            var monitorIsGlassForm = Request.Form["MonitorIsGlass"].ToString();
             if (dto.MonitorIsGlass.HasValue)
             {
                 user.MonitorIsGlass = dto.MonitorIsGlass.Value;
+            }
+            else if (!string.IsNullOrEmpty(monitorIsGlassForm))
+            {
+                user.MonitorIsGlass = monitorIsGlassForm.ToLower() == "true";
             }
 
             await _context.SaveChangesAsync();
