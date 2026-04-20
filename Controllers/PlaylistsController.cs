@@ -20,6 +20,19 @@ namespace FataleCore.Controllers
             _context = context;
         }
 
+        // GET: api/Playlists
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<PlaylistDto>>> GetTrendingPlaylists()
+        {
+            var playlists = await _context.Playlists
+                .Where(p => p.IsPublic)
+                .OrderByDescending(p => p.TrackCount)
+                .Take(20)
+                .ToListAsync();
+
+            return Ok(playlists.Select(p => p.ToDto()));
+        }
+
         // GET: api/Playlists/user/{userId}
         [HttpGet("user/{userId}")]
         public async Task<ActionResult<IEnumerable<PlaylistDto>>> GetUserPlaylists(int userId)
