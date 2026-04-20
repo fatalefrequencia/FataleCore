@@ -1,5 +1,8 @@
 namespace FataleCore.DTOs
 {
+    /// <summary>
+    /// Data Transfer Object for User profile information.
+    /// </summary>
     public class UserDto
     {
         public int Id { get; set; }

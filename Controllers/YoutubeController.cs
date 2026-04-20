@@ -44,7 +44,7 @@ namespace FataleCore.Controllers
             }
             else 
             {
-                Console.WriteLine($"[YOUTUBE] API Key found (Length: {apiKey.Length})");
+                Console.WriteLine($"[YOUTUBE] API Key found (Length: {apiKey?.Length ?? 0})");
             }
 
             _youtubeService = new YouTubeService(new BaseClientService.Initializer()
