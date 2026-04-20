@@ -114,8 +114,9 @@ namespace FataleCore.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TRACK_UPLOAD] ERROR: {ex.Message}");
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var fullMessage = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                Console.WriteLine($"[TRACK_UPLOAD] ERROR: {fullMessage}");
+                return StatusCode(500, $"Internal server error: {fullMessage}");
             }
         }
 

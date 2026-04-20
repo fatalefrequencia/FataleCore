@@ -101,7 +101,8 @@ namespace FataleCore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var fullMsg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, $"Internal server error: {fullMsg}");
             }
         }
 
@@ -182,7 +183,8 @@ namespace FataleCore.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var fullMsg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, $"Internal server error: {fullMsg}");
             }
         }
     }
