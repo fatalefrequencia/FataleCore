@@ -10,7 +10,9 @@ obj/
 .gemini/
 publish/
 appsettings.Development.json
-uploads/
+uploads/**/*
+!uploads/avatars/
+!uploads/banners/
 Cache/
 data/
 fatale_core.db
