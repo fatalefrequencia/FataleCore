@@ -180,8 +180,6 @@ namespace FataleCore.Controllers
         }
 
         // DELETE: api/Playlists/{id}
-
-        // DELETE: api/Playlists/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePlaylist(int id, [FromHeader(Name = "UserId")] int userId)
         {
@@ -197,6 +195,34 @@ namespace FataleCore.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // POST: api/Playlists/{id}/upload-cover
+        [HttpPost("{id}/upload-cover")]
+        public async Task<IActionResult> UploadCover(int id, IFormFile file, [FromHeader(Name = "UserId")] int userId, [FromServices] IWebHostEnvironment environment)
+        {
+            var playlist = await _context.Playlists.FindAsync(id);
+            if (playlist == null) return NotFound();
+            if (playlist.UserId != userId) return Forbid();
+
+            if (file == null || file.Length == 0)
+                return BadRequest("No file provided.");
+
+            var appBase = environment.IsProduction() ? "/data" : Directory.GetCurrentDirectory();
+            var uploadsPath = Path.Combine(appBase, "uploads");
+            if (!Directory.Exists(uploadsPath))
+                Directory.CreateDirectory(uploadsPath);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+                await file.CopyToAsync(stream);
+
+            playlist.ImageUrl = $"/uploads/{fileName}";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { imageUrl = playlist.ImageUrl });
         }
     }
 }
