@@ -111,7 +111,7 @@ namespace FataleCore.Controllers
                         .ThenInclude(a => a!.Artist)
                 .FirstOrDefaultAsync(s => s.Artist != null && s.Artist.UserId == userId);
 
-            if (station == null) return NotFound();
+            if (station == null) return NoContent();
 
             return Ok(new StationDto
             {
