@@ -112,5 +112,19 @@ namespace FataleCore.DTOs
                 TrackCount = playlist.TrackCount
             };
         }
+
+        public static GearDto ToDto(this UserGear gear)
+        {
+            if (gear == null) return null!;
+            return new GearDto
+            {
+                Id = gear.Id,
+                UserId = gear.UserId,
+                Name = gear.Name,
+                Category = gear.Category,
+                Notes = gear.Notes,
+                DisplayOrder = gear.DisplayOrder
+            };
+        }
     }
 }

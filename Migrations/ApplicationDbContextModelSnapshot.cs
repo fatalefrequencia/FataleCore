@@ -847,6 +847,38 @@ namespace FataleCore.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("FataleCore.Models.UserGear", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserGear");
+                });
+
             modelBuilder.Entity("FataleCore.Models.UserArtistLike", b =>
                 {
                     b.Property<int>("Id")
@@ -1336,6 +1368,17 @@ namespace FataleCore.Migrations
             modelBuilder.Entity("FataleCore.Models.Community", b =>
                 {
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("FataleCore.Models.UserGear", b =>
+                {
+                    b.HasOne("FataleCore.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FataleCore.Models.FeedInteraction", b =>
