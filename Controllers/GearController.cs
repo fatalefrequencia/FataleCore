@@ -29,6 +29,17 @@ namespace FataleCore.Controllers
             return Ok(gear.Select(g => g.ToDto()));
         }
 
+        // GET: api/Gear/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<GearDto>> GetGear(int id)
+        {
+            var gear = await _context.UserGear.FindAsync(id);
+
+            if (gear == null) return NotFound();
+
+            return Ok(gear.ToDto());
+        }
+
         // POST: api/Gear
         [HttpPost]
         public async Task<ActionResult<GearDto>> PostGear([FromBody] CreateGearDto dto, [FromHeader(Name = "UserId")] int userId)
@@ -47,7 +58,7 @@ namespace FataleCore.Controllers
             _context.UserGear.Add(gear);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetUserGear), new { userId = gear.UserId }, gear.ToDto());
+            return CreatedAtAction(nameof(GetGear), new { id = gear.Id }, gear.ToDto());
         }
 
         // PUT: api/Gear/5
