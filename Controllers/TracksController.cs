@@ -85,7 +85,7 @@ namespace FataleCore.Controllers
                 
                 if (defaultAlbum == null)
                 {
-                    defaultAlbum = new Album { Title = "Singles", ArtistId = artist.Id, ReleaseDate = DateTime.Now, CoverImageUrl = $"/uploads/{coverFileName}" };
+                    defaultAlbum = new Album { Title = "Singles", ArtistId = artist.Id, ReleaseDate = DateTime.UtcNow, CoverImageUrl = $"/uploads/{coverFileName}" };
                     _context.Albums.Add(defaultAlbum);
                     await _context.SaveChangesAsync();
                 }
