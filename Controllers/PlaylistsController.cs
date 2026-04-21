@@ -25,6 +25,7 @@ namespace FataleCore.Controllers
         public async Task<ActionResult<IEnumerable<PlaylistDto>>> GetTrendingPlaylists()
         {
             var playlists = await _context.Playlists
+                .Include(p => p.User)
                 .Where(p => p.IsPublic)
                 .OrderByDescending(p => p.TrackCount)
                 .Take(20)
@@ -49,7 +50,10 @@ namespace FataleCore.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetPlaylist(int id)
         {
-            var playlist = await _context.Playlists.FindAsync(id);
+            var playlist = await _context.Playlists
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            
             if (playlist == null) return NotFound();
 
             var tracks = await _context.PlaylistTracks

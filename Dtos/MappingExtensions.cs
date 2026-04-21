@@ -109,6 +109,7 @@ namespace FataleCore.DTOs
                 IsPinned = playlist.IsPinned,
                 IsPosted = playlist.IsPosted,
                 UserId = playlist.UserId,
+                AuthorName = playlist.User?.Username ?? "Unknown",
                 TrackCount = playlist.TrackCount
             };
         }

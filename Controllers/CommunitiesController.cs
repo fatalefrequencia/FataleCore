@@ -145,6 +145,37 @@ namespace FataleCore.Controllers
 
             return Ok(members);
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCommunity(int id, [FromHeader(Name = "UserId")] int userId)
+        {
+            if (userId <= 0) return Unauthorized();
+
+            var community = await _context.Communities
+                .Include(c => c.Members)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (community == null) return NotFound();
+
+            if (community.FounderUserId != userId)
+                return Forbid("Only the founder can terminate this community.");
+
+            // Clear community link for all members
+            var members = await _context.Users.Where(u => u.CommunityId == id).ToListAsync();
+            foreach (var m in members)
+            {
+                m.CommunityId = null;
+            }
+
+            // Remove all associated chat messages
+            var messages = await _context.CommunityMessages.Where(m => m.CommunityId == id).ToListAsync();
+            _context.CommunityMessages.RemoveRange(messages);
+
+            _context.Communities.Remove(community);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Community signal terminated." });
+        }
+
         // POST: api/communities/{id}/image
         [HttpPost("{id}/image")]
         public async Task<IActionResult> UpdateCommunityImage(int id, [FromBody] UpdateImageDto dto, [FromHeader(Name = "UserId")] int userId)

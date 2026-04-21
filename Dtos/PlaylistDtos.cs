@@ -12,6 +12,7 @@ namespace FataleCore.DTOs
         public bool IsPinned { get; set; }
         public bool IsPosted { get; set; }
         public int UserId { get; set; }
+        public string AuthorName { get; set; } = string.Empty;
         public int TrackCount { get; set; }
     }
 
