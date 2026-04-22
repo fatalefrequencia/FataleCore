@@ -20,7 +20,7 @@ namespace FataleCore.Controllers
         [HttpGet]
         public async Task<IActionResult> GetArtists()
         {
-            var artists = await _context.Artists.ToListAsync();
+            var artists = await _context.Artists.Include(a => a.User).ToListAsync();
             return Ok(artists.Select(a => a.ToDto()));
         }
 
@@ -125,6 +125,7 @@ namespace FataleCore.Controllers
             var likedArtists = await _context.UserArtistLikes
                 .Where(l => l.UserId == userId)
                 .Include(l => l.Artist)
+                .ThenInclude(a => a != null ? a.User : null)
                 .Where(l => l.Artist != null)
                 .Select(l => l.Artist!)
                 .ToListAsync();

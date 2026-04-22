@@ -47,7 +47,8 @@ namespace FataleCore.DTOs
                 SectorId = artist.SectorId,
                 IsLive = artist.IsLive,
                 FeaturedTrackId = artist.FeaturedTrackId,
-                UserId = artist.UserId
+                UserId = artist.UserId,
+                CommunityId = artist.User?.CommunityId
             };
         }
 

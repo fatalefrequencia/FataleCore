@@ -12,5 +12,6 @@ namespace FataleCore.DTOs
         public bool IsLive { get; set; }
         public int? FeaturedTrackId { get; set; }
         public int? UserId { get; set; }
+        public int? CommunityId { get; set; }
     }
 }
