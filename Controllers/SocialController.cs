@@ -30,6 +30,13 @@ namespace FataleCore.Controllers
                 return Ok(new { message = "Already liked", liked = true });
             }
 
+            var like = new UserLike
+            {
+                UserId = userId,
+                TrackId = trackId,
+                LikedAt = DateTime.UtcNow
+            };
+
             _context.UserLikes.Add(like);
 
             // SYNC: Ensure FeedInteraction (Social Feed System) is also updated
