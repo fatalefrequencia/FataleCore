@@ -54,6 +54,23 @@ namespace FataleCore.Controllers
 
             await _context.SaveChangesAsync();
 
+            // SYNC Para Absolute Parity: Si es un track, sincronizar con la tabla UserLikes (Librería/iPod)
+            if (request.ItemType == "track")
+            {
+                var existingLibraryLike = await _context.UserLikes
+                    .FirstOrDefaultAsync(l => l.UserId == userId && l.TrackId == request.ItemId);
+
+                if (liked && existingLibraryLike == null)
+                {
+                    _context.UserLikes.Add(new UserLike { UserId = userId, TrackId = request.ItemId, LikedAt = DateTime.UtcNow });
+                }
+                else if (!liked && existingLibraryLike != null)
+                {
+                    _context.UserLikes.Remove(existingLibraryLike);
+                }
+                await _context.SaveChangesAsync();
+            }
+
             var count = await _context.FeedInteractions
                 .CountAsync(i => i.ItemType == request.ItemType && 
                                  i.ItemId == request.ItemId && 

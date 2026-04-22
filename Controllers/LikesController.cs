@@ -95,15 +95,26 @@ namespace FataleCore.Controllers
         {
             if (userId <= 0) return Unauthorized("Invalid User ID");
 
-            // Fetch mixed tracks (local + youtube-indexed)
-            var likedTracks = await _context.UserLikes
+            // 1. Get Track IDs from UserLikes (System A)
+            var trackIdsA = await _context.UserLikes
                 .Where(l => l.UserId == userId)
-                .Include(l => l.Track)
-                    .ThenInclude(t => t!.Album)
-                        .ThenInclude(a => a!.Artist)
-                .Where(l => l.Track != null) // Ensure no orphaned likes
-                .Select(l => l.Track!)
-                .Distinct() // Prevent UI duplication
+                .Select(l => l.TrackId)
+                .ToListAsync();
+
+            // 2. Get Track IDs from FeedInteractions (System B)
+            var trackIdsB = await _context.FeedInteractions
+                .Where(i => i.UserId == userId && i.ItemType == "track" && i.InteractionType == "LIKE")
+                .Select(i => i.ItemId)
+                .ToListAsync();
+
+            // 3. Union them to avoid duplicates
+            var allTrackIds = trackIdsA.Union(trackIdsB).Distinct().ToList();
+
+            // 4. Fetch the actual tracks
+            var likedTracks = await _context.Tracks
+                .Where(t => !t.IsDelisted && allTrackIds.Contains(t.Id))
+                .Include(t => t.Album)
+                    .ThenInclude(a => a!.Artist)
                 .ToListAsync();
 
             return Ok(likedTracks.Select(t => t.ToDto()));

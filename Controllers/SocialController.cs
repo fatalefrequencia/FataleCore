@@ -30,14 +30,23 @@ namespace FataleCore.Controllers
                 return Ok(new { message = "Already liked", liked = true });
             }
 
-            var like = new UserLike
-            {
-                UserId = userId,
-                TrackId = trackId,
-                LikedAt = DateTime.UtcNow
-            };
-
             _context.UserLikes.Add(like);
+
+            // SYNC: Ensure FeedInteraction (Social Feed System) is also updated
+            var existingInteraction = await _context.FeedInteractions
+                .FirstOrDefaultAsync(i => i.UserId == userId && i.ItemType == "track" && i.ItemId == trackId && i.InteractionType == "LIKE");
+            if (existingInteraction == null)
+            {
+                _context.FeedInteractions.Add(new FeedInteraction
+                {
+                    UserId = userId,
+                    ItemType = "track",
+                    ItemId = trackId,
+                    InteractionType = "LIKE",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Track liked", liked = true });
@@ -58,6 +67,16 @@ namespace FataleCore.Controllers
             }
 
             _context.UserLikes.Remove(existingLike);
+
+            // SYNC: Remove from FeedInteractions (Social Feed System)
+            var interactions = await _context.FeedInteractions
+                .Where(i => i.UserId == userId && i.ItemType == "track" && i.ItemId == trackId && i.InteractionType == "LIKE")
+                .ToListAsync();
+            if (interactions.Any())
+            {
+                _context.FeedInteractions.RemoveRange(interactions);
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Track unliked", liked = false });
