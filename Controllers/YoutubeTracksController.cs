@@ -43,7 +43,21 @@ namespace FataleCore.Controllers
 
             // Assign to system archive album
             var systemAlbum = await _context.Albums.FirstOrDefaultAsync(a => a.Title == "YouTube Signals");
-            if (systemAlbum == null) return StatusCode(500, "System Archive not initialized.");
+            if (systemAlbum == null)
+            {
+                var systemArtist = await _context.Artists.FirstOrDefaultAsync(a => a.Name == "The Archive");
+                if (systemArtist == null) return StatusCode(500, "System Archive not initialized.");
+                
+                systemAlbum = new Album
+                {
+                    Title = "YouTube Signals",
+                    ReleaseDate = DateTime.UtcNow,
+                    CoverImageUrl = "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                    ArtistId = systemArtist.Id
+                };
+                _context.Albums.Add(systemAlbum);
+                await _context.SaveChangesAsync();
+            }
 
             // Create new entry in common Tracks table
             var newTrack = new Track
