@@ -24,6 +24,7 @@ namespace FataleCore.DTOs
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
         public string? StatusMessage { get; set; }
+        public string? CommunityName { get; set; }
         
         // Artist Metadata (optional)
         public bool IsLive { get; set; }

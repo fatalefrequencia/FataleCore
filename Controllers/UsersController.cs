@@ -66,7 +66,9 @@ namespace FataleCore.Controllers
                  return Unauthorized(new { message = "IDENTITY_SYNC_FAIL: UserId header missing or invalid in request.", receivedId = userId });
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _context.Users
+                .Include(u => u.Community)
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound("User not found");
 
             var artist = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
@@ -77,6 +79,7 @@ namespace FataleCore.Controllers
         public async Task<IActionResult> GetUser(int id)
         {
             var user = await _context.Users
+                .Include(u => u.Community)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)

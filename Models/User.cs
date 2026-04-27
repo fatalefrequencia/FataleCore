@@ -31,5 +31,8 @@ namespace FataleCore.Models
         public int? ResidentSectorId { get; set; }
         public int? CommunityId { get; set; }
         public string? StatusMessage { get; set; }
+
+        [ForeignKey("CommunityId")]
+        public virtual Community? Community { get; set; }
     }
 }

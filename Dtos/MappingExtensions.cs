@@ -28,6 +28,7 @@ namespace FataleCore.DTOs
                 ResidentSectorId = user.ResidentSectorId,
                 CommunityId = user.CommunityId,
                 StatusMessage = user.StatusMessage,
+                CommunityName = user.Community?.Name,
                 IsLive = artist?.IsLive ?? false,
                 FeaturedTrackId = artist?.FeaturedTrackId
             };
