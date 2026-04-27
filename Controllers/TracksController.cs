@@ -125,6 +125,9 @@ namespace FataleCore.Controllers
         {
             var query = _context.Tracks
                 .Where(t => !t.IsDelisted)
+                // Permanently exclude YouTube/Archive tracks from Discovery feeds
+                .Where(t => t.Source == null || !t.Source.StartsWith("youtube:"))
+                .Where(t => t.Album == null || t.Album.Artist == null || t.Album.Artist.Name != "The Archive")
                 .Include(t => t.Album)
                     .ThenInclude(a => a!.Artist)
                 .AsQueryable();
